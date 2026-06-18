@@ -26,9 +26,16 @@ pub fn run(
     let cfg = config.lock().unwrap();
     let enabled = cfg.enabled;
     let auto_start = cfg.auto_start;
+    let device_id = cfg.device_id.clone();
+    let short_id = device_id[..device_id.len().min(8)].to_string();
     drop(cfg);
 
     let menu = Menu::new();
+
+    let id_label = format!("Agent: {}", short_id);
+    let id_item = MenuItem::new(&id_label, false, None);
+    menu.append(&id_item).unwrap();
+    menu.append(&PredefinedMenuItem::separator()).unwrap();
 
     let (enable_enabled, disable_enabled) = if enabled {
         (false, true)
@@ -36,9 +43,9 @@ pub fn run(
         (true, false)
     };
     let initial_tooltip = if enabled {
-        "StreamDeck Agent - Disconnected"
+        format!("StreamDeck Agent ({}) - Disconnected", short_id)
     } else {
-        "StreamDeck Agent - Disabled"
+        format!("StreamDeck Agent ({}) - Disabled", short_id)
     };
 
     let enable_item = MenuItem::new("Enable", enable_enabled, None);
@@ -147,12 +154,12 @@ pub fn run(
 
                 while let Ok(status) = status_rx.try_recv() {
                     let tooltip = match &status {
-                        AppStatus::Connected => "StreamDeck Agent - Connected",
-                        AppStatus::Reconnecting => "StreamDeck Agent - Reconnecting",
-                        AppStatus::Disconnected => "StreamDeck Agent - Disconnected",
-                        AppStatus::Disabled => "StreamDeck Agent - Disabled",
+                        AppStatus::Connected => format!("StreamDeck Agent ({}) - Connected", short_id),
+                        AppStatus::Reconnecting => format!("StreamDeck Agent ({}) - Reconnecting", short_id),
+                        AppStatus::Disconnected => format!("StreamDeck Agent ({}) - Disconnected", short_id),
+                        AppStatus::Disabled => format!("StreamDeck Agent ({}) - Disabled", short_id),
                     };
-                    tray.set_tooltip(Some(tooltip)).ok();
+                    tray.set_tooltip(Some(&tooltip)).ok();
 
                     match &status {
                         AppStatus::Disabled => {
