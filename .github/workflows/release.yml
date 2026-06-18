@@ -19,7 +19,7 @@ jobs:
             os: macos-latest
             artifact: notstreamdeck-agent-macos-arm64
           - target: x86_64-apple-darwin
-            os: macos-13
+            os: macos-latest
             artifact: notstreamdeck-agent-macos-x64
           - target: x86_64-pc-windows-gnu
             os: macos-latest
