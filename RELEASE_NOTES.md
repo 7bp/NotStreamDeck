@@ -1,3 +1,7 @@
+## v0.1.4
+
+- Fix: move `hslToRgb` before `PlasmaMode` to prevent Vite minifier TDZ error
+
 ## v0.1.3
 
 - Feature: screensaver timeout and dim opacity now adjustable in Settings (5-300s, 30-100%)
