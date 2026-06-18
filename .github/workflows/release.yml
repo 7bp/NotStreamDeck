@@ -68,14 +68,21 @@ jobs:
         with:
           node-version: 20
 
-      - name: Install dependencies
-        run: |
-          cd control && npm install
-          cd client && npm install
+      - name: Install server dependencies
+        run: npm install
+        working-directory: control
+
+      - name: Install client dependencies
+        run: npm install
+        working-directory: control/client
 
       - name: Build
         run: npm run build
         working-directory: control/client
+
+      - name: Verify build output
+        run: ls -la control/client/dist/
+        shell: bash
 
       - name: Package frontend
         run: |
