@@ -4,6 +4,26 @@ A cross-platform Stream Deck alternative: a Rust background agent that executes 
 
 Copyright (c) 2026 NotStreamDeck
 
+## Screenshots
+
+<table>
+  <tr>
+    <td><img src=".github/assets/screenshot_0_main.jpeg" width="240"/><br/><em>Main deck view</em></td>
+    <td><img src=".github/assets/screenshot_1_pincode.jpeg" width="240"/><br/><em>PIN code modal</em></td>
+    <td><img src=".github/assets/screenshot_2_timer.jpeg" width="240"/><br/><em>Timer key editor</em></td>
+  </tr>
+  <tr>
+    <td><img src=".github/assets/screenshot_3_app.jpeg" width="240"/><br/><em>App key creator (macOS)</em></td>
+    <td><img src=".github/assets/screenshot_4_pages.jpeg" width="240"/><br/><em>Pages settings</em></td>
+    <td><img src=".github/assets/screenshot_5_hosts.jpeg" width="240"/><br/><em>Host management</em></td>
+  </tr>
+  <tr>
+    <td><img src=".github/assets/screenshot_6_agent.jpeg" width="240"/><br/><em>macOS agent in menu bar</em></td>
+    <td></td>
+    <td></td>
+  </tr>
+</table>
+
 ## Architecture
 
 ```
