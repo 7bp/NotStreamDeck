@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 
-const MODES = ['clock', 'gradient', 'weather', 'icons', 'starfield', 'pulse', 'datequote', 'photos', 'bounce', 'netdiag'];
+const MODES = ['clock', 'gradient', 'weather', 'icons', 'starfield', 'pulse', 'datequote', 'photos', 'bounce', 'fireworks', 'aurora', 'rainbow', 'plasma'];
 
 const quotes = [
   "The best time to plant a tree was 20 years ago.",
@@ -224,267 +224,234 @@ function BounceMode() {
   return <canvas ref={canvasRef} style={{ position: 'absolute', inset: 0 }} />;
 }
 
-function NetworkDiagramMode() {
-  const [devices, setDevices] = useState([]);
-  const [loading, setLoading] = useState(true);
+function FireworksMode() {
   const canvasRef = useRef(null);
-
-  useEffect(() => {
-    fetch('/api/network-data')
-      .then((r) => r.json())
-      .then((d) => { if (d.devices?.length) setDevices(d.devices); setLoading(false); })
-      .catch(() => setLoading(false));
-  }, []);
-
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+    let w = canvas.width = window.innerWidth;
+    let h = canvas.height = window.innerHeight;
+    const handleResize = () => { w = canvas.width = window.innerWidth; h = canvas.height = window.innerHeight; };
+    window.addEventListener('resize', handleResize);
 
-    const dpr = window.devicePixelRatio || 1;
+    const rockets = [];
+    const sparks = [];
+    const colors = ['#ff0040', '#ff6600', '#ffcc00', '#00ff88', '#00ccff', '#8844ff', '#ff44ff'];
 
-    let w = 0, h = 0;
-
-    function resize() {
-      w = canvas.offsetWidth;
-      h = canvas.offsetHeight;
-      canvas.width = w * dpr;
-      canvas.height = h * dpr;
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    }
-    resize();
-    window.addEventListener('resize', resize);
-
-    const nodes = devices.length > 0 ? [...devices] : [];
-    const isMock = nodes.length === 0;
-    if (isMock) {
-      for (let i = 0; i < 18; i++) {
-        const a = 10 + Math.floor(Math.random() * 240);
-        nodes.push({ ip: `192.168.${50 + i}.${i + 1}`, hostname: `node-${a}`, mac: '' });
-      }
+    function spawnRocket() {
+      const x = Math.random() * w;
+      rockets.push({ x, y: h, vy: -3 - Math.random() * 5 });
     }
 
-    // Gateway left, others in a balanced grid
-    const gwIndex = nodes.findIndex((n) => n.ip?.startsWith('192.168.') && n.ip.endsWith('.1'));
-    const nodeCount = nodes.length;
-    const leafNodes = nodes.filter((_, i) => i !== gwIndex);
-    const leafCount = leafNodes.length;
-
-    const boxW = Math.max(72, Math.min(120, Math.floor((w * 0.5) / Math.ceil(Math.sqrt(leafCount)) - 16)));
-    const boxH = 28;
-    const gapX = boxW + 18;
-    const gapY = boxH + 22;
-    const cols = Math.max(1, Math.floor((w * 0.55) / gapX));
-    const rows = Math.ceil(leafCount / cols);
-
-    const gridLeft = w * 0.35;
-    const gridTop = Math.max(20, (h - (rows * gapY - 22)) / 2);
-
-    const positions = nodes.map((_, i) => {
-      if (gwIndex >= 0 && i === gwIndex) return { x: w * 0.15, y: h * 0.5, vx: 0, vy: 0, tx: w * 0.15, ty: h * 0.5 };
-      const leafIdx = i > gwIndex ? i - 1 : i;
-      const col = leafIdx % cols;
-      const row = Math.floor(leafIdx / cols);
-      const tx = gridLeft + col * gapX + boxW / 2;
-      const ty = gridTop + row * gapY + boxH / 2;
-      return { x: tx, y: ty, vx: 0, vy: 0, tx, ty };
-    });
-
-    // Packet system
-    const packets = [];
-    function spawnPacket(from, to) {
-      const p1 = positions[from];
-      const p2 = positions[to];
-      if (!p1 || !p2) return;
-      const midX = (p1.x + p2.x) / 2;
-      // Total path length
-      const len = Math.abs(midX - p1.x) + Math.abs(p2.y - midX) + Math.abs(p2.x - midX);
-      packets.push({ from, to, midX, progress: 0, speed: (0.008 + Math.random() * 0.014) * (Math.min(w, h) / 400) });
-    }
-    function getPacketPos(p) {
-      const p1 = positions[p.from];
-      const p2 = positions[p.to];
-      if (!p1 || !p2) return null;
-      const seg1 = Math.abs(p.midX - p1.x);
-      const seg2 = Math.abs(p2.y - p1.y);
-      const seg3 = Math.abs(p2.x - p.midX);
-      const total = seg1 + seg2 + seg3;
-      const d = p.progress * total;
-      if (d < seg1) {
-        const t = seg1 > 0 ? d / seg1 : 0;
-        return { x: p1.x + (p.midX - p1.x) * t, y: p1.y };
-      } else if (d < seg1 + seg2) {
-        const t = seg2 > 0 ? (d - seg1) / seg2 : 0;
-        return { x: p.midX, y: p1.y + (p2.y - p1.y) * t };
-      } else {
-        const t = seg3 > 0 ? (d - seg1 - seg2) / seg3 : 0;
-        return { x: p.midX + (p2.x - p.midX) * t, y: p2.y };
+    function explode(x, y) {
+      const count = 60 + Math.floor(Math.random() * 40);
+      const color = colors[Math.floor(Math.random() * colors.length)];
+      for (let i = 0; i < count; i++) {
+        const angle = (Math.PI * 2 * i) / count;
+        const speed = 1.5 + Math.random() * 3;
+        sparks.push({ x, y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, life: 1, color, decay: 0.008 + Math.random() * 0.012 });
       }
     }
 
     let frame;
-    let t = 0;
-
-    function drawOrthoLine(x1, y1, x2, y2, alpha, lw) {
-      const midX = (x1 + x2) / 2;
-      ctx.beginPath();
-      ctx.moveTo(x1, y1);
-      ctx.lineTo(midX, y1);
-      ctx.lineTo(midX, y2);
-      ctx.lineTo(x2, y2);
-      ctx.strokeStyle = `rgba(0,255,0,${alpha})`;
-      ctx.lineWidth = lw;
-      ctx.stroke();
-    }
-
+    let tick = 0;
+    spawnRocket();
     const draw = () => {
-      t += 0.01;
-      ctx.fillStyle = '#000';
+      tick++;
+      ctx.fillStyle = 'rgba(0,0,0,0.12)';
       ctx.fillRect(0, 0, w, h);
 
-      // Grid overlay
-      ctx.strokeStyle = 'rgba(0,255,0,0.03)';
-      ctx.lineWidth = 0.5;
-      for (let x = 0; x < w; x += 30) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke(); }
-      for (let y = 0; y < h; y += 30) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke(); }
+      if (tick % 30 === 0 && rockets.length < 4) spawnRocket();
+      if (Math.random() < 0.02) spawnRocket();
 
-      // Soft drift toward target
-      for (let i = 0; i < positions.length; i++) {
-        if (gwIndex >= 0 && i === gwIndex) continue;
-        positions[i].vx += (positions[i].tx - positions[i].x) * 0.003;
-        positions[i].vy += (positions[i].ty - positions[i].y) * 0.003;
-        positions[i].vx *= 0.95;
-        positions[i].vy *= 0.95;
-        positions[i].x += positions[i].vx;
-        positions[i].y += positions[i].vy;
-      }
-
-      // Spawn packets
-      if (Math.random() < 0.08) {
-        const from = gwIndex >= 0 ? gwIndex : 0;
-        const to = Math.floor(Math.random() * nodes.length);
-        if (to !== from) spawnPacket(from, to);
-      }
-      if (Math.random() < 0.04) {
-        const a = Math.floor(Math.random() * nodes.length);
-        let b = Math.floor(Math.random() * nodes.length);
-        if (b === a) b = (a + 1) % nodes.length;
-        if (gwIndex < 0 || (a !== gwIndex && b !== gwIndex)) spawnPacket(a, b);
-      }
-
-      // Update and expire packets
-      for (let i = packets.length - 1; i >= 0; i--) {
-        packets[i].progress += packets[i].speed;
-        if (packets[i].progress >= 1) packets.splice(i, 1);
-      }
-
-      // Draw connection lines (static + packet glow)
-      for (let i = 0; i < nodes.length; i++) {
-        for (let j = i + 1; j < nodes.length; j++) {
-          const isGwLink = gwIndex >= 0 && (i === gwIndex || j === gwIndex);
-          const hasPacket = packets.some(p => (p.from === i && p.to === j) || (p.from === j && p.to === i));
-          const isNeighbor = !isGwLink && Math.abs(i - j) <= 2 && Math.random() > 0.45;
-          if (!isGwLink && !isNeighbor && !hasPacket) continue;
-          const dx = positions[i].x - positions[j].x;
-          const dy = positions[i].y - positions[j].y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist > Math.min(w, h) * 0.7) continue;
-          const alpha = hasPacket ? 0.5 + 0.15 * Math.sin(t * 2) : (isGwLink ? 0.25 + 0.1 * Math.sin(t * 1.5 + i * 0.5) : 0.06);
-          const lw = hasPacket ? 1.2 : (isGwLink ? 0.8 + 0.3 * Math.sin(t * 1.5 + i) : 0.4);
-          drawOrthoLine(positions[i].x, positions[i].y, positions[j].x, positions[j].y, alpha, lw);
+      for (let i = rockets.length - 1; i >= 0; i--) {
+        const r = rockets[i];
+        r.y += r.vy;
+        ctx.fillStyle = 'rgba(255,255,255,0.6)';
+        ctx.fillRect(r.x - 1, r.y - 3, 2, 6);
+        if (r.vy < 0) r.vy -= 0.05;
+        if (r.vy >= 0 || r.y < h * 0.15 + Math.random() * h * 0.3) {
+          explode(r.x, r.y);
+          rockets.splice(i, 1);
         }
       }
 
-      // Draw packets as traveling dots
-      for (const p of packets) {
-        const pos = getPacketPos(p);
-        if (!pos) continue;
-        const bright = 0.5 + 0.5 * Math.sin(p.progress * Math.PI);
-        ctx.beginPath();
-        ctx.arc(pos.x, pos.y, 1.8 + bright, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(0,255,0,${bright})`;
-        ctx.fill();
-      }
-
-      // Box nodes
-      for (let i = 0; i < nodes.length; i++) {
-        const { x, y } = positions[i];
-        const isGw = gwIndex >= 0 && i === gwIndex;
-        const bw = isGw ? 100 : boxW;
-        const bh = isGw ? 36 : boxH;
-
-        ctx.shadowColor = '#0f0';
-        ctx.shadowBlur = isGw ? 16 : 8;
-        ctx.fillStyle = isGw ? 'rgba(0,20,0,0.85)' : 'rgba(0,12,0,0.65)';
-        ctx.fillRect(x - bw / 2, y - bh / 2, bw, bh);
-        ctx.strokeStyle = '#0f0';
-        ctx.lineWidth = isGw ? 1.5 : 1;
-        ctx.strokeRect(x - bw / 2, y - bh / 2, bw, bh);
-        ctx.shadowBlur = 0;
-
-        // Scan line
-        ctx.strokeStyle = `rgba(0,255,0,${0.06 + 0.03 * Math.sin(t * 2 + i)})`;
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.moveTo(x - bw / 2 + 4, y + 1);
-        ctx.lineTo(x + bw / 2 - 4, y + 1);
-        ctx.stroke();
-
-        // Active indicator — glows when packets are active on this node
-        const hasActive = packets.some(p => p.from === i || p.to === i);
-        if (hasActive) {
-          ctx.shadowColor = '#0f0';
-          ctx.shadowBlur = 14;
-          ctx.strokeStyle = 'rgba(0,255,0,0.3)';
-          ctx.lineWidth = 1;
-          ctx.strokeRect(x - bw / 2, y - bh / 2, bw, bh);
-          ctx.shadowBlur = 0;
-        }
-
-        const showHost = nodes[i].hostname && nodes[i].hostname !== '?';
-        const label = showHost ? nodes[i].hostname : nodes[i].ip;
-        ctx.fillStyle = '#0f0';
-        ctx.font = isGw ? 'bold 11px monospace' : '10px monospace';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(label, x, y - 1);
-        if (showHost) {
-          ctx.fillStyle = 'rgba(0,255,0,0.4)';
-          ctx.font = '7px monospace';
-          ctx.fillText(nodes[i].ip, x, y + bh / 2 + 8);
-        }
-
-        // Blink dots
-        ctx.fillStyle = `rgba(0,255,0,${0.08 + 0.06 * Math.sin(t * 3 + i * 1.5)})`;
-        ctx.fillRect(x + bw / 2 - 7, y - bh / 2 + 3, 3, 3);
-        ctx.fillRect(x + bw / 2 - 7, y + bh / 2 - 6, 3, 3);
-      }
-
-      // Gateway label
-      if (gwIndex >= 0) {
-        ctx.fillStyle = 'rgba(0,255,0,0.25)';
-        ctx.font = '8px monospace';
-        ctx.textAlign = 'center';
-        ctx.fillText('GATEWAY', positions[gwIndex].x, positions[gwIndex].y + 30);
+      for (let i = sparks.length - 1; i >= 0; i--) {
+        const s = sparks[i];
+        s.x += s.vx;
+        s.y += s.vy;
+        s.vy += 0.04;
+        s.life -= s.decay;
+        if (s.life <= 0) { sparks.splice(i, 1); continue; }
+        ctx.globalAlpha = s.life;
+        ctx.fillStyle = s.color;
+        ctx.fillRect(s.x - 1, s.y - 1, 2, 2);
+        ctx.globalAlpha = 1;
       }
 
       frame = requestAnimationFrame(draw);
     };
-    draw();
-    return () => { cancelAnimationFrame(frame); window.removeEventListener('resize', resize); };
-  }, [devices]);
+    frame = requestAnimationFrame(draw);
+    return () => { cancelAnimationFrame(frame); window.removeEventListener('resize', handleResize); };
+  }, []);
+  return <canvas ref={canvasRef} style={{ position: 'absolute', inset: 0 }} />;
+}
 
-  if (loading) return <span style={{ color: '#0f0', fontSize: '1rem' }}>Scanning network…</span>;
+function AuroraMode() {
+  const canvasRef = useRef(null);
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    let w = canvas.width = window.innerWidth;
+    let h = canvas.height = window.innerHeight;
+    const handleResize = () => { w = canvas.width = window.innerWidth; h = canvas.height = window.innerHeight; };
+    window.addEventListener('resize', handleResize);
 
-  return (
-    <div style={{ position: 'absolute', inset: 0 }}>
-      <canvas ref={canvasRef} style={{ width: '100%', height: '100%' }} />
-      <span style={{ position: 'absolute', top: 12, left: 16, fontSize: '0.65rem', color: '#0f0', opacity: 0.5 }}>
-        {devices.length > 0 ? `${devices.length} hosts` : 'mock network'}
-      </span>
-    </div>
-  );
+    let t = 0;
+    const layers = [
+      { y: 0.15, height: 0.2, speed: 0.3, color: [0, 180, 255], amp: 60 },
+      { y: 0.25, height: 0.25, speed: 0.5, color: [120, 255, 120], amp: 80 },
+      { y: 0.35, height: 0.2, speed: 0.4, color: [200, 100, 255], amp: 50 },
+      { y: 0.45, height: 0.15, speed: 0.6, color: [255, 80, 150], amp: 70 },
+    ];
+
+    let frame;
+    const draw = () => {
+      t += 0.005;
+      ctx.fillStyle = 'rgba(0,0,0,0.03)';
+      ctx.fillRect(0, 0, w, h);
+
+      for (const layer of layers) {
+        const yBase = h * layer.y;
+        const hRange = h * layer.height;
+        for (let x = 0; x < w; x += 2) {
+          const val = Math.sin(x * 0.008 + t * layer.speed) * layer.amp
+            + Math.sin(x * 0.015 + t * layer.speed * 0.7) * layer.amp * 0.5
+            + Math.sin(x * 0.003 + t * layer.speed * 0.4) * layer.amp * 0.3;
+          const alpha = Math.max(0, 1 - Math.abs(val) / (layer.amp * 2));
+          if (alpha < 0.05) continue;
+          const yOff = val;
+          const [r, g, b] = layer.color;
+          ctx.fillStyle = `rgba(${r},${g},${b},${alpha * 0.15})`;
+          ctx.fillRect(x, yBase + yOff - hRange / 2, 2, hRange);
+        }
+      }
+
+      ctx.fillStyle = 'rgba(0,0,0,0.02)';
+      ctx.fillRect(0, 0, w, h * 0.5);
+
+      frame = requestAnimationFrame(draw);
+    };
+    frame = requestAnimationFrame(draw);
+    return () => { cancelAnimationFrame(frame); window.removeEventListener('resize', handleResize); };
+  }, []);
+  return <canvas ref={canvasRef} style={{ position: 'absolute', inset: 0 }} />;
+}
+
+function RainbowMode() {
+  const canvasRef = useRef(null);
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    let w = canvas.width = window.innerWidth;
+    let h = canvas.height = window.innerHeight;
+    const handleResize = () => { w = canvas.width = window.innerWidth; h = canvas.height = window.innerHeight; };
+    window.addEventListener('resize', handleResize);
+
+    let t = 0;
+    let frame;
+    const draw = () => {
+      t += 0.02;
+      ctx.fillStyle = 'rgba(0,0,0,0.05)';
+      ctx.fillRect(0, 0, w, h);
+
+      const bands = 7;
+      for (let i = 0; i < bands; i++) {
+        const hue = ((i / bands) * 360 + t * 20) % 360;
+        const yBase = (h / (bands + 1)) * (i + 1);
+        const amp = 20 + Math.sin(t * 0.5 + i) * 10;
+        for (let x = 0; x < w; x += 3) {
+          const yOff = Math.sin(x * 0.02 + t * 2 + i) * amp;
+          ctx.fillStyle = `hsla(${hue}, 80%, 55%, 0.15)`;
+          ctx.fillRect(x, yBase + yOff - 4, 3, 8);
+        }
+      }
+
+      frame = requestAnimationFrame(draw);
+    };
+    frame = requestAnimationFrame(draw);
+    return () => { cancelAnimationFrame(frame); window.removeEventListener('resize', handleResize); };
+  }, []);
+  return <canvas ref={canvasRef} style={{ position: 'absolute', inset: 0 }} />;
+}
+
+function PlasmaMode() {
+  const canvasRef = useRef(null);
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    let w = canvas.width = window.innerWidth;
+    let h = canvas.height = window.innerHeight;
+    const handleResize = () => { w = canvas.width = window.innerWidth; h = canvas.height = window.innerHeight; };
+    window.addEventListener('resize', handleResize);
+
+    let t = 0;
+    let frame;
+    const draw = () => {
+      t += 0.02;
+      const imageData = ctx.createImageData(w, h);
+      const data = imageData.data;
+
+      for (let y = 0; y < h; y += 2) {
+        for (let x = 0; x < w; x += 2) {
+          const v = Math.sin(x * 0.01 + t)
+            + Math.sin(y * 0.01 + t * 0.6)
+            + Math.sin((x + y) * 0.008 + t * 0.8)
+            + Math.sin(Math.sqrt(x * x + y * y) * 0.008 + t);
+          const hue = (v * 60 + t * 40) % 360;
+          const sat = 80 + Math.sin(t + x * 0.01) * 10;
+          const light = 30 + Math.sin(v + t) * 15;
+
+          const rgb = hslToRgb(hue / 360, sat / 100, light / 100);
+          const idx = (y * w + x) * 4;
+          data[idx] = rgb[0];
+          data[idx + 1] = rgb[1];
+          data[idx + 2] = rgb[2];
+          data[idx + 3] = 255;
+          // Fill adjacent pixel for performance
+          if (x + 1 < w) {
+            data[idx + 4] = rgb[0];
+            data[idx + 5] = rgb[1];
+            data[idx + 6] = rgb[2];
+            data[idx + 7] = 255;
+          }
+        }
+      }
+
+      ctx.putImageData(imageData, 0, 0);
+      frame = requestAnimationFrame(draw);
+    };
+    frame = requestAnimationFrame(draw);
+    return () => { cancelAnimationFrame(frame); window.removeEventListener('resize', handleResize); };
+  }, []);
+  return <canvas ref={canvasRef} style={{ position: 'absolute', inset: 0 }} />;
+}
+
+function hslToRgb(h, s, l) {
+  let r, g, b;
+  if (s === 0) { r = g = b = l; } else {
+    const hue2rgb = (p, q, t) => { if (t < 0) t += 1; if (t > 1) t -= 1; if (t < 1/6) return p + (q - p) * 6 * t; if (t < 1/2) return q; if (t < 2/3) return p + (q - p) * (2/3 - t) * 6; return p; };
+    const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+    const p = 2 * l - q;
+    r = hue2rgb(p, q, h + 1/3);
+    g = hue2rgb(p, q, h);
+    b = hue2rgb(p, q, h - 1/3);
+  }
+  return [r * 255, g * 255, b * 255];
 }
 
 export default function Screensaver({ mode, timeStr, pages, hosts, hostStatus }) {
@@ -508,7 +475,10 @@ export default function Screensaver({ mode, timeStr, pages, hosts, hostStatus })
       case 'datequote': return <DateQuoteMode />;
       case 'photos': return <PhotoSlideshowMode pages={pages} />;
       case 'bounce': return <BounceMode />;
-      case 'netdiag': return <NetworkDiagramMode />;
+      case 'fireworks': return <FireworksMode />;
+      case 'aurora': return <AuroraMode />;
+      case 'rainbow': return <RainbowMode />;
+      case 'plasma': return <PlasmaMode />;
       default: return <ClockMode timeStr={timeStr} />;
     }
   };
@@ -522,7 +492,7 @@ export default function Screensaver({ mode, timeStr, pages, hosts, hostStatus })
       overflow: 'hidden',
     }}>
       {renderContent()}
-      {!['gradient', 'starfield', 'photos', 'netdiag'].includes(actualMode) && (
+      {!['gradient', 'starfield', 'photos', 'fireworks', 'aurora', 'rainbow', 'plasma'].includes(actualMode) && (
         <span style={{ position: 'absolute', bottom: 12, right: 16, fontSize: '0.65rem', color: '#333', opacity: 0.5 }}>
           {label}
         </span>

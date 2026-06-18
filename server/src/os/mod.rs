@@ -8,7 +8,6 @@ pub trait OSAdapter {
     fn lock_screen(&self);
     fn nowplaying(&self) -> String;
     fn list_apps(&self) -> String;
-    fn network_scan(&self) -> String;
     fn media_control(&self, command: &str);
 }
 

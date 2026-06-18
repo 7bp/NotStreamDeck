@@ -84,12 +84,6 @@ pub fn handle(msg: &Value, token: &str) -> Value {
             let apps: Vec<Value> = serde_json::from_str(&raw).unwrap_or_default();
             json!({"id": id, "ok": true, "error": null, "data": {"apps": apps}})
         }
-        "network_scan" => {
-            log!("[streamdeck-agent] network_scan");
-            let raw = adapter.network_scan();
-            let data: Value = serde_json::from_str(&raw).unwrap_or(json!({"devices": []}));
-            json!({"id": id, "ok": true, "error": null, "data": data})
-        }
         "macro" => {
             let actions = msg["payload"]["actions"].as_array().cloned().unwrap_or_default();
             log!("[streamdeck-agent] macro: {} actions", actions.len());

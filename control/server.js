@@ -20,7 +20,6 @@ const WS_PORT = parseInt(process.env.WS_PORT, 10) || (() => { const d = store.ge
 // ---------- Agent WebSocket connections ----------
 const agentConns = new Map(); // deviceId -> { ws, hostId }
 const pendingQueries = new Map(); // commandId -> { resolve, timer }
-const networkCache = { devices: [] };
 
 // ---------- Frontend WebSocket connections ----------
 const frontendConns = new Set();
@@ -72,23 +71,6 @@ wss.on('connection', (ws) => {
       agentConns.set(deviceId, { ws, hostId: host.id });
       store.setHostOnline(deviceId);
       broadcastFrontend({ type: 'host_status', data: hostStatusList() });
-
-      // Trigger network scan on first connection
-      const scanId = uuidv4();
-      const scanCmd = { id: scanId, type: 'network_scan', payload: {}, token: config.token };
-      const scanTimer = setTimeout(() => pendingQueries.delete(scanId), 20000);
-      pendingQueries.set(scanId, {
-        resolve: (data) => {
-          clearTimeout(scanTimer);
-          if (data.ok && data.data?.devices) {
-            networkCache.devices = data.data.devices;
-            broadcastFrontend({ type: 'network_data', data: networkCache });
-          }
-          pendingQueries.delete(scanId);
-        },
-        timer: scanTimer,
-      });
-      try { ws.send(JSON.stringify(scanCmd)); } catch { pendingQueries.delete(scanId); }
     } else if (msg.id && typeof msg.ok === 'boolean') {
       // Command response — resolve pending query
       const pending = pendingQueries.get(msg.id);
@@ -386,12 +368,6 @@ app.post('/api/nowplaying/:hostId', (req, res) => sendAgentQuery(req.params.host
 
 // ---------- List Apps ----------
 app.post('/api/list-apps/:hostId', (req, res) => sendAgentQuery(req.params.hostId, 'list_apps', {}, res, 15000));
-
-// ---------- Network Scan ----------
-app.post('/api/network-scan/:hostId', (req, res) => sendAgentQuery(req.params.hostId, 'network_scan', {}, res, 15000));
-
-// ---------- Cached Network Data ----------
-app.get('/api/network-data', (_, res) => res.json(networkCache));
 
 // ---------- Upload endpoint ----------
 app.post('/api/upload', upload.single('file'), (req, res) => {

@@ -95,11 +95,6 @@ if($s -and $s.Title){$s.Title + "`t" + $s.Artist}else{''}"#;
         String::new()
     }
 
-    fn network_scan(&self) -> String {
-        // Windows stub — could use Get-NetNeighbor
-        String::new()
-    }
-
     fn media_control(&self, command: &str) {
         let key = match command {
             "playpause" => "179",

@@ -202,7 +202,10 @@ function SettingsPanel({ config, saveConfig, onPreviewScreensaver, clientIP }) {
     { id: 'datequote', label: 'Date & Quote' },
     { id: 'photos', label: 'Photo Slideshow' },
     { id: 'bounce', label: 'Bouncing Logo' },
-    { id: 'netdiag', label: 'Network Diagram' },
+    { id: 'fireworks', label: 'Fireworks' },
+    { id: 'aurora', label: 'Aurora' },
+    { id: 'rainbow', label: 'Rainbow' },
+    { id: 'plasma', label: 'Plasma' },
     { id: 'cycle', label: 'Cycle All' },
   ];
   const current = config.screensaver || 'clock';

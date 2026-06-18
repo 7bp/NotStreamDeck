@@ -1,6 +1,8 @@
 ## v0.1.2
 
 - Feature: show device ID prefix (first 8 chars) in tray menu label and tooltip for easy agent identification
+- Feature: 4 new colorful screensaver modes — Fireworks, Aurora, Rainbow, Plasma
+- Change: removed Network Diagram screensaver and all ARP/network_scan agent commands
 - Fix: frontend release zip now preserves `client/dist/` directory structure
 
 ## v0.1.1
