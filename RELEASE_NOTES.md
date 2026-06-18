@@ -1,3 +1,8 @@
+## v0.1.2
+
+- Feature: show device ID prefix (first 8 chars) in tray menu label and tooltip for easy agent identification
+- Fix: frontend release zip now preserves `client/dist/` directory structure
+
 ## v0.1.1
 
 - Fix: use `macos-latest` (ARM) for all agent builds — Apple Silicon runners cross-compile x86_64 natively, no need to wait for scarce Intel runners
