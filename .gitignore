@@ -1,0 +1,20 @@
+# Rust
+server/target/
+
+# Node.js
+control/node_modules/
+control/client/node_modules/
+
+# Build output
+control/client/dist/
+
+# Runtime data
+control/data.json
+control/uploads/
+
+# macOS
+.DS_Store
+
+# Editor
+*.swp
+*.swo
