@@ -52,7 +52,7 @@ The agent connects to `ws://<server>:<ws_port>`. Configure the agent's `server_u
 
 ## Features
 
-### Key Types (12)
+### Key Types (11)
 | Type | Description |
 |------|-------------|
 | `open_app` | Launch an application (dropdown of installed apps fetched from agent) |
@@ -86,8 +86,8 @@ The agent connects to `ws://<server>:<ws_port>`. Configure the agent's `server_u
 - PIN unlocks edit mode or opens full setup
 - Screensaver hidden when IP-restricted
 
-### Screensaver (11 Modes)
-Digital Clock, Ambient Gradient, Weather, Icon Slideshow, Starfield, Network Pulse, Date & Quote, Photo Slideshow, Bouncing Logo, **Network Diagram**, Cycle All. Network Diagram shows live LAN devices with animated orthogonal connections, real hostnames, and traveling data packets.
+### Screensaver (13 Modes)
+Digital Clock, Ambient Gradient, Weather, Icon Slideshow, Starfield, Network Pulse, Date & Quote, Photo Slideshow, Bouncing Logo, **Fireworks**, **Aurora**, **Rainbow**, **Plasma**, Cycle All. Configurable timeout (5-300s) and dim overlay opacity (30-100%) in Settings.
 
 ### Now Playing
 - Polls system-wide nowplaying-cli (macOS 14+) every 10s
@@ -98,6 +98,10 @@ Digital Clock, Ambient Gradient, Weather, Icon Slideshow, Starfield, Network Pul
 Export all pages and keys as a JSON file, import to restore or transfer configurations between instances.
 
 ### Agent
+
+- System tray with Enable/Disable, Set Server URL/Token, Restart, Quit
+- Tray label shows device ID prefix (first 8 chars) for easy identification across multiple agents
+- Tooltip shows device ID + connection status
 
 | Feature | macOS | Windows |
 |---------|-------|---------|
@@ -110,7 +114,6 @@ Export all pages and keys as a JSON file, import to restore or transfer configur
 | lock | ✓ `/System/Library/.../ScreenSaver.app` | stub |
 | nowplaying | ✓ `nowplaying-cli` + AppleScript | stub |
 | list_apps | ✓ `/Applications` scan | stub |
-| network_scan | ✓ `arp -a` + parallel `host` | stub |
 | media_control | ✓ `nowplaying-cli` + key codes | stub |
 
 ## Getting Started
@@ -188,6 +191,8 @@ Open `http://localhost:3000` in a browser.
   "http_port": 3000,
   "pin": "000000",
   "allowedIPs": [],
+  "screensaverTimeout": 30,
+  "screensaverOpacity": 1,
   "hosts": [],
   "pages": [...]
 }
@@ -228,7 +233,7 @@ poorsteamdeck/
                 ├── KeyEditor.jsx    # Per-type key editor
                 ├── PageManager.jsx  # Page CRUD + add key form
                 ├── SetupPanel.jsx   # Tabs: Pages/Hosts/Settings
-                ├── Screensaver.jsx  # 11 screensaver modes
+                ├── Screensaver.jsx  # 13 screensaver modes
                 └── HostManager.jsx  # Host CRUD
 ```
 
@@ -256,7 +261,5 @@ poorsteamdeck/
 | POST | `/api/verify-pin` | Verify PIN `{ pin: "..." }` |
 | POST | `/api/nowplaying/:hostId` | Get now-playing from agent |
 | POST | `/api/list-apps/:hostId` | List installed apps from agent |
-| POST | `/api/network-scan/:hostId` | Trigger network scan on agent |
-| GET | `/api/network-data` | Cached network scan results |
 | GET | `/api/myip` | Client IP address |
 | POST | `/api/upload` | Upload an image file |
