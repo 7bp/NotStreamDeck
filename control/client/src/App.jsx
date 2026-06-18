@@ -33,37 +33,6 @@ const [serverVersion, setServerVersion] = useState(null);
     return () => clearInterval(id);
   }, []);
 
-  // Dim timer — only on deck view, not in edit mode
-  useEffect(() => {
-    if (view !== 'deck' || editMode) {
-      setDimmed(false);
-      return;
-    }
-
-    const start = () => {
-      clearTimeout(timerRef.current);
-      timerRef.current = setTimeout(() => setDimmed(true), dimTimeout);
-    };
-
-    start();
-
-    const handler = () => {
-      setDimmed(false);
-      start();
-    };
-
-    document.addEventListener('touchstart', handler);
-    document.addEventListener('click', handler);
-    document.addEventListener('keydown', handler);
-
-    return () => {
-      clearTimeout(timerRef.current);
-      document.removeEventListener('touchstart', handler);
-      document.removeEventListener('click', handler);
-      document.removeEventListener('keydown', handler);
-    };
-  }, [view, editMode, dimTimeout]);
-
   // PIN gate — toggle edit mode on grid, or open full setup
   const requestSetup = (mode) => {
     if (mode === 'full') {
@@ -110,6 +79,38 @@ const [serverVersion, setServerVersion] = useState(null);
 
   const { config, setConfig, saveConfig } = useConfig();
   const dimTimeout = (config?.screensaverTimeout ?? 30) * 1000;
+
+  // Dim timer — only on deck view, not in edit mode
+  useEffect(() => {
+    if (view !== 'deck' || editMode) {
+      setDimmed(false);
+      return;
+    }
+
+    const start = () => {
+      clearTimeout(timerRef.current);
+      timerRef.current = setTimeout(() => setDimmed(true), dimTimeout);
+    };
+
+    start();
+
+    const handler = () => {
+      setDimmed(false);
+      start();
+    };
+
+    document.addEventListener('touchstart', handler);
+    document.addEventListener('click', handler);
+    document.addEventListener('keydown', handler);
+
+    return () => {
+      clearTimeout(timerRef.current);
+      document.removeEventListener('touchstart', handler);
+      document.removeEventListener('click', handler);
+      document.removeEventListener('keydown', handler);
+    };
+  }, [view, editMode, dimTimeout]);
+
   const { hosts, addHost, updateHost, deleteHost, setHosts } = useHosts();
   const { pages, addPage, updatePage, deletePage, addKey, updateKey, deleteKey, setPages } = usePages();
   const { execute } = useExecute();

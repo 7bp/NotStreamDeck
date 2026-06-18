@@ -1,10 +1,14 @@
+## v0.1.6
+
+- Fix: move dim timer `useEffect` after `dimTimeout` declaration to fix the real TDZ root cause — `const dimTimeout` was referenced in a dependency array earlier in the same scope, triggering `Cannot access 'W' before initialization` in production builds
+
 ## v0.1.5
 
-- Fix: TDZ error where `dimTimeout` referenced `config` before it was declared in App.jsx
+- Fix: move dim timer `useEffect` after `useConfig()` to prevent TDZ error (insufficient — same error persisted with different minified names)
 
 ## v0.1.4
 
-- Fix: move `hslToRgb` before `PlasmaMode` to prevent Vite minifier TDZ error
+- Fix: move `hslToRgb` before `PlasmaMode` to attempt Vite minifier TDZ workaround (not the real issue)
 
 ## v0.1.3
 
