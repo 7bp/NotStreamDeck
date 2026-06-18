@@ -161,7 +161,7 @@ impl OSAdapter for MacOSAdapter {
                 .unwrap_or(false)
         };
 
-        if app_running("Music") {
+        if app_running("^Music$") {
             if let Ok(out) = std::process::Command::new("osascript")
                 .args(["-e", r#"tell application "Music" to get {name, artist} of current track"#])
                 .output()
