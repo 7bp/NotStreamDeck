@@ -1,3 +1,7 @@
+## v0.1.5
+
+- Fix: TDZ error where `dimTimeout` referenced `config` before it was declared in App.jsx
+
 ## v0.1.4
 
 - Fix: move `hslToRgb` before `PlasmaMode` to prevent Vite minifier TDZ error

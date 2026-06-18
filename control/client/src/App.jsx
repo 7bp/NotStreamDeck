@@ -19,7 +19,6 @@ const [serverVersion, setServerVersion] = useState(null);
   const [previewSs, setPreviewSs] = useState(false);
 
   const timerRef = useRef(null);
-  const dimTimeout = (config?.screensaverTimeout ?? 30) * 1000;
 
   // Clock — 24h format
   useEffect(() => {
@@ -63,7 +62,7 @@ const [serverVersion, setServerVersion] = useState(null);
       document.removeEventListener('click', handler);
       document.removeEventListener('keydown', handler);
     };
-  }, [view]);
+  }, [view, editMode, dimTimeout]);
 
   // PIN gate — toggle edit mode on grid, or open full setup
   const requestSetup = (mode) => {
@@ -110,6 +109,7 @@ const [serverVersion, setServerVersion] = useState(null);
   const [bgUploading, setBgUploading] = useState(false);
 
   const { config, setConfig, saveConfig } = useConfig();
+  const dimTimeout = (config?.screensaverTimeout ?? 30) * 1000;
   const { hosts, addHost, updateHost, deleteHost, setHosts } = useHosts();
   const { pages, addPage, updatePage, deletePage, addKey, updateKey, deleteKey, setPages } = usePages();
   const { execute } = useExecute();
