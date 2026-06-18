@@ -9,6 +9,8 @@ const defaults = {
   ws_port: 8080,
   pin: '000000',
   allowedIPs: [],
+  screensaverTimeout: 30,
+  screensaverOpacity: 1,
   hosts: [],
   pages: [
     {

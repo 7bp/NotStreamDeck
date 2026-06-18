@@ -19,7 +19,7 @@ const [serverVersion, setServerVersion] = useState(null);
   const [previewSs, setPreviewSs] = useState(false);
 
   const timerRef = useRef(null);
-  const dimTimeout = 30000;
+  const dimTimeout = (config?.screensaverTimeout ?? 30) * 1000;
 
   // Clock — 24h format
   useEffect(() => {
@@ -111,7 +111,7 @@ const [serverVersion, setServerVersion] = useState(null);
 
   const { config, setConfig, saveConfig } = useConfig();
   const { hosts, addHost, updateHost, deleteHost, setHosts } = useHosts();
-  const { pages, addPage, updatePage, deletePage, addKey, updateKey, deleteKey } = usePages();
+  const { pages, addPage, updatePage, deletePage, addKey, updateKey, deleteKey, setPages } = usePages();
   const { execute } = useExecute();
   const { upload } = useUpload();
   const clientIP = useMyIP();
@@ -224,9 +224,10 @@ const [serverVersion, setServerVersion] = useState(null);
       if (msg.type === 'config') {
         setConfig(msg.data);
         if (msg.data.version) setServerVersion(msg.data.version);
-        if (msg.data.pages) {
+        if (msg.data.pages) setPages(msg.data.pages);
+        if (msg.data.hosts) {
           setHosts((prev) => {
-            const newHosts = msg.data.hosts || [];
+            const newHosts = msg.data.hosts;
             return newHosts.map((nh) => {
               const old = prev.find((p) => p.id === nh.id);
               return { ...nh, status: old?.status || nh.status || 'offline' };
@@ -391,6 +392,7 @@ const [serverVersion, setServerVersion] = useState(null);
         <div
           style={{
             ...dimOverlay,
+            background: `rgba(0,0,0,${config?.screensaverOpacity ?? 1})`,
             opacity: previewSs || (view === 'deck' && dimmed) ? 1 : 0,
             pointerEvents: previewSs || (view === 'deck' && dimmed) ? 'auto' : 'none',
             transition: 'opacity 1.5s ease',

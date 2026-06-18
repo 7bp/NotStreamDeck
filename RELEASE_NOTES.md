@@ -1,3 +1,9 @@
+## v0.1.3
+
+- Feature: screensaver timeout and dim opacity now adjustable in Settings (5-300s, 30-100%)
+- Fix: frontend now re-renders immediately when keys/pages are added via WebSocket config broadcast
+- Fix: pages state stays in sync with server config updates
+
 ## v0.1.2
 
 - Feature: show device ID prefix (first 8 chars) in tray menu label and tooltip for easy agent identification

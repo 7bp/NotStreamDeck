@@ -284,6 +284,33 @@ function SettingsPanel({ config, saveConfig, onPreviewScreensaver, clientIP }) {
           ))}
         </div>
         {ssMsg && <p style={{ color: '#2a6', fontSize: '0.8rem' }}>{ssMsg}</p>}
+
+        <div style={{ marginTop: 12 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <p style={{ color: '#888', margin: 0, fontSize: '0.85rem' }}>Timeout ({config.screensaverTimeout || 30}s)</p>
+          </div>
+          <input
+            type="range"
+            min={5}
+            max={300}
+            step={5}
+            value={config.screensaverTimeout || 30}
+            onChange={(e) => saveConfig({ screensaverTimeout: parseInt(e.target.value) })}
+            style={{ width: '100%', margin: '4px 0 8px' }}
+          />
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <p style={{ color: '#888', margin: 0, fontSize: '0.85rem' }}>Dim Opacity ({Math.round((config.screensaverOpacity || 1) * 100)}%)</p>
+          </div>
+          <input
+            type="range"
+            min={30}
+            max={100}
+            step={5}
+            value={Math.round((config.screensaverOpacity || 1) * 100)}
+            onChange={(e) => saveConfig({ screensaverOpacity: parseInt(e.target.value) / 100 })}
+            style={{ width: '100%', margin: '4px 0' }}
+          />
+        </div>
       </div>
 
       <p style={{ color: '#555', fontSize: '0.8rem', marginTop: 24, lineHeight: 1.5 }}>
