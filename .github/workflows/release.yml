@@ -78,8 +78,8 @@ jobs:
 
       - name: Package frontend
         run: |
-          mkdir -p notstreamdeck-frontend
-          cp -r control/client/dist/* notstreamdeck-frontend/
+          mkdir -p notstreamdeck-frontend/client/dist
+          cp -r control/client/dist/* notstreamdeck-frontend/client/dist/
           cp control/package.json notstreamdeck-frontend/
           cp control/server.js notstreamdeck-frontend/
           cp control/store.js notstreamdeck-frontend/
