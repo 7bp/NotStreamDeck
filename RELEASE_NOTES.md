@@ -1,3 +1,8 @@
+## v0.1.7
+
+- Fix: anchor `pgrep Music` regex with `^...$` to prevent AppleScript false-positive launches — substring match could hit a background daemon, then `tell application "Music"` would launch Music.app
+- Docs: screenshot gallery in README
+
 ## v0.1.6
 
 - Fix: move dim timer `useEffect` after `dimTimeout` declaration to fix the real TDZ root cause — `const dimTimeout` was referenced in a dependency array earlier in the same scope, triggering `Cannot access 'W' before initialization` in production builds
