@@ -1,3 +1,7 @@
+## v0.1.1
+
+- Fix: use `macos-latest` (ARM) for all agent builds — Apple Silicon runners cross-compile x86_64 natively, no need to wait for scarce Intel runners
+
 ## What's new
 
 Initial release of NotStreamDeck — a cross-platform Stream Deck alternative.
