@@ -1,6 +1,7 @@
 ## v0.1.1
 
 - Fix: use `macos-latest` (ARM) for all agent builds — Apple Silicon runners cross-compile x86_64 natively, no need to wait for scarce Intel runners
+- Fix: split frontend npm install into separate steps to prevent `npm audit` non-zero exit from aborting the build
 
 ## What's new
 

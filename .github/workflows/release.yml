@@ -68,10 +68,6 @@ jobs:
         with:
           node-version: 20
 
-      - name: Install server dependencies
-        run: npm install
-        working-directory: control
-
       - name: Install client dependencies
         run: npm install
         working-directory: control/client
@@ -80,10 +76,6 @@ jobs:
         run: npm run build
         working-directory: control/client
 
-      - name: Verify build output
-        run: ls -la control/client/dist/
-        shell: bash
-
       - name: Package frontend
         run: |
           mkdir -p notstreamdeck-frontend
@@ -91,13 +83,12 @@ jobs:
           cp control/package.json notstreamdeck-frontend/
           cp control/server.js notstreamdeck-frontend/
           cp control/store.js notstreamdeck-frontend/
-          cd notstreamdeck-frontend && zip -r ../notstreamdeck-frontend.zip .
 
-      - name: Upload artifact
+      - name: Upload frontend files
         uses: actions/upload-artifact@v4
         with:
           name: notstreamdeck-frontend
-          path: notstreamdeck-frontend.zip
+          path: notstreamdeck-frontend/
 
   release:
     name: Create Release
@@ -107,13 +98,23 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download all artifacts
+      - name: Download agent artifacts
         uses: actions/download-artifact@v4
+        with:
+          pattern: notstreamdeck-agent-*
+          path: release-assets
+          merge-multiple: true
 
-      - name: Prepare release files
+      - name: Download frontend files
+        uses: actions/download-artifact@v4
+        with:
+          name: notstreamdeck-frontend
+          path: notstreamdeck-frontend
+
+      - name: Prepare release assets
         run: |
-          mkdir -p release-assets
-          find . -name 'notstreamdeck-*' -type f -exec cp {} release-assets/ \;
+          cd notstreamdeck-frontend && zip -r ../release-assets/notstreamdeck-frontend.zip .
+          cd ..
           ls -la release-assets/
 
       - name: Create release
