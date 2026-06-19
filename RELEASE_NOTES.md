@@ -1,3 +1,8 @@
+## v0.1.8
+
+- Fix: switch tokio runtime to single-threaded (`current_thread`) to eliminate ~5% idle CPU usage on Windows — `Runtime::new()` spawns `num_cpus` worker threads that burn cycles even when idle
+- Fix: remove nowplaying PowerShell WMI query on Windows — the `MSiSCSI_MediaInfo` class is for iSCSI storage, not media playback, so it always returned empty while spawning powershell.exe every 10s
+
 ## v0.1.7
 
 - Fix: anchor `pgrep Music` regex with `^...$` to prevent AppleScript false-positive launches — substring match could hit a background daemon, then `tell application "Music"` would launch Music.app

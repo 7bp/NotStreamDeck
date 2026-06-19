@@ -75,18 +75,8 @@ for($i=0;$i -lt {level};$i++){{$(New-Object -ComObject WScript.Shell).SendKeys([
     }
 
     fn nowplaying(&self) -> String {
-        // Simple polling via PowerShell for media info
-        let script = r#"$s=Get-CimInstance -Namespace Root/WMI -Class MSiSCSI_MediaInfo 2>$null;
-if($s -and $s.Title){$s.Title + "`t" + $s.Artist}else{''}"#;
-        if let Ok(out) = std::process::Command::new("powershell")
-            .args(["-NoProfile", "-NoLogo", "-Command", script])
-            .output()
-        {
-            let raw = String::from_utf8_lossy(&out.stdout).trim().to_string();
-            if !raw.is_empty() && raw != "''" {
-                return raw;
-            }
-        }
+        // Not supported on Windows — the MSiSCSI_MediaInfo WMI class is for iSCSI storage, not media playback.
+        // Skipping to avoid wasteful PowerShell spawning every 10s.
         String::new()
     }
 

@@ -35,7 +35,10 @@ pub fn run(
     status_tx: mpsc::Sender<AppStatus>,
 ) {
     let cmd_rx = Mutex::new(cmd_rx);
-    let rt = tokio::runtime::Runtime::new().unwrap();
+    let rt = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap();
     rt.block_on(run_async(config, cmd_rx, status_tx));
 }
 
