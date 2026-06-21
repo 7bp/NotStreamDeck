@@ -89,7 +89,9 @@ pub fn run(
     let poll_interval = Duration::from_millis(200);
 
     event_loop.run(move |event, _, control_flow| {
-        *control_flow = ControlFlow::Poll;
+        *control_flow = ControlFlow::WaitUntil(
+            std::time::Instant::now() + Duration::from_millis(200),
+        );
 
         match event {
             Event::NewEvents(StartCause::Init) | Event::NewEvents(StartCause::Poll) => {
