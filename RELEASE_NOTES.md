@@ -1,3 +1,7 @@
+## v0.1.12
+
+- Fix: handle all `NewEvents` start causes in tray event loop — `WaitUntil` generates `ResumeTimeReached` and `SentEvent`, not `Poll`, so the menu handler was never reached and disable/quit appeared broken
+
 ## v0.1.11
 
 - Fix: change `tao` event loop from `ControlFlow::Poll` to `ControlFlow::WaitUntil` — `Poll` keeps the main thread running continuously, consuming 75% CPU even when idle. `WaitUntil` parks the thread in the kernel until the next 200ms tick or a real menu event.
