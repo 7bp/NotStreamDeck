@@ -63,21 +63,6 @@ pub fn handle(msg: &Value, token: &str) -> Value {
             adapter.notify("StreamDeck Agent", "Screen locked");
             json!({"id": id, "ok": true, "error": null})
         }
-        "nowplaying" => {
-            log!("[streamdeck-agent] nowplaying");
-            let raw = adapter.nowplaying();
-            let (title, artist) = raw.split_once('\t').unwrap_or((&raw, ""));
-            json!({
-                "id": id,
-                "ok": true,
-                "error": null,
-                "data": {
-                    "title": title,
-                    "artist": artist,
-                    "hasTrack": !raw.is_empty(),
-                }
-            })
-        }
         "list_apps" => {
             log!("[streamdeck-agent] list_apps");
             let raw = adapter.list_apps();

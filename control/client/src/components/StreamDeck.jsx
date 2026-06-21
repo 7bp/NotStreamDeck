@@ -61,7 +61,7 @@ function TimerKey({ actionPayload, iconSize, bgColor, disabled }) {
   );
 }
 
-export default function StreamDeck({ page, hosts, hostStatus, pageIndex, pageCount, onPrev, onNext, onSetup, onExecute, onAddKey, onEditKey, onEditPage, editMode, timeStr, nowplaying, onNavigate, serverVersion }) {
+export default function StreamDeck({ page, hosts, hostStatus, pageIndex, pageCount, onPrev, onNext, onSetup, onExecute, onAddKey, onEditKey, onEditPage, editMode, timeStr, onNavigate, serverVersion }) {
   const cols = page.cols || 5;
   const rows = page.rows || 3;
   const iconSize = page.iconSize || 64;
@@ -146,16 +146,6 @@ export default function StreamDeck({ page, hosts, hostStatus, pageIndex, pageCou
               </span>
             );
           })}
-        </div>
-      )}
-
-      {/* Now Playing bar */}
-      {nowplaying && (
-        <div style={styles.npBar}>
-          <span style={{ fontSize: '0.75rem', marginRight: 6 }}>🎵</span>
-          <span style={styles.npText}>
-            {nowplaying.title}{nowplaying.artist ? ` — ${nowplaying.artist}` : ''}
-          </span>
         </div>
       )}
 
@@ -244,15 +234,6 @@ const styles = {
   setupBtn: { background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', padding: 4 },
   hostsBar: {
     display: 'flex', gap: 8, flexWrap: 'wrap', padding: '4px 0',
-  },
-  npBar: {
-    display: 'flex', alignItems: 'center', gap: 4, padding: '4px 8px',
-    background: 'rgba(255,255,255,0.04)', borderRadius: 8,
-    overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis',
-  },
-  npText: {
-    fontSize: '0.75rem', color: '#999', overflow: 'hidden',
-    textOverflow: 'ellipsis', whiteSpace: 'nowrap',
   },
   hostChip: {
     display: 'inline-flex', alignItems: 'center', gap: 5,

@@ -74,12 +74,6 @@ for($i=0;$i -lt {level};$i++){{$(New-Object -ComObject WScript.Shell).SendKeys([
             .ok();
     }
 
-    fn nowplaying(&self) -> String {
-        // Not supported on Windows — the MSiSCSI_MediaInfo WMI class is for iSCSI storage, not media playback.
-        // Skipping to avoid wasteful PowerShell spawning every 10s.
-        String::new()
-    }
-
     fn list_apps(&self) -> String {
         // Windows stub — return desktop shortcuts or Start Menu apps
         String::new()

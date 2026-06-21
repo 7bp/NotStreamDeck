@@ -1,8 +1,14 @@
 # NotStreamDeck
 
-A cross-platform Stream Deck alternative: a Rust background agent that executes remote commands, and a Node.js control server with a React frontend for configuring and triggering stream-deck-style grid actions.
+Remote-controlled action grid for your desktop. Assign shortcuts, app launches, shell commands, media controls, and more to a mobile-friendly grid — executed on any networked machine via a lightweight Rust agent.
 
-Copyright (c) 2026 NotStreamDeck
+## Approach
+
+A Rust daemon runs in the background on each target machine, connected via WebSocket to a central Node.js server. The web UI serves a configurable action grid (pages, keys, host pinning) that works on phones, tablets, and desktops. The agent handles execution locally — no screen sharing, no remote desktop, just instant action.
+
+## Outcome
+
+Live on your LAN, cross-platform, with 11 action types, 13 screensaver modes, multi-page grids, IP access control, and import/export. MIT licensed.
 
 ## Screenshots
 
@@ -109,11 +115,6 @@ The agent connects to `ws://<server>:<ws_port>`. Configure the agent's `server_u
 ### Screensaver (13 Modes)
 Digital Clock, Ambient Gradient, Weather, Icon Slideshow, Starfield, Network Pulse, Date & Quote, Photo Slideshow, Bouncing Logo, **Fireworks**, **Aurora**, **Rainbow**, **Plasma**, Cycle All. Configurable timeout (5-300s) and dim overlay opacity (30-100%) in Settings.
 
-### Now Playing
-- Polls system-wide nowplaying-cli (macOS 14+) every 10s
-- AppleScript fallback for Music.app/Spotify (guarded by pgrep — won't launch apps)
-- Displayed between hosts bar and grid
-
 ### Import / Export
 Export all pages and keys as a JSON file, import to restore or transfer configurations between instances.
 
@@ -132,9 +133,8 @@ Export all pages and keys as a JSON file, import to restore or transfer configur
 | clipboard | ✓ `pbcopy` | stub |
 | volume | ✓ `osascript` | stub |
 | lock | ✓ `/System/Library/.../ScreenSaver.app` | stub |
-| nowplaying | ✓ `nowplaying-cli` + AppleScript | stub |
 | list_apps | ✓ `/Applications` scan | stub |
-| media_control | ✓ `nowplaying-cli` + key codes | stub |
+| media_control | ✓ key codes + `nowplaying-cli` | stub |
 
 ## Getting Started
 
@@ -279,7 +279,6 @@ poorsteamdeck/
 | DELETE | `/api/keys/:id` | Delete key |
 | POST | `/api/execute/:keyId` | Execute a key action on its host |
 | POST | `/api/verify-pin` | Verify PIN `{ pin: "..." }` |
-| POST | `/api/nowplaying/:hostId` | Get now-playing from agent |
 | POST | `/api/list-apps/:hostId` | List installed apps from agent |
 | GET | `/api/myip` | Client IP address |
 | POST | `/api/upload` | Upload an image file |

@@ -363,9 +363,6 @@ function sendAgentQuery(hostId, type, payload, res, timeoutMs) {
   try { conn.ws.send(JSON.stringify(cmd)); } catch { clearTimeout(timer); pendingQueries.delete(cmdId); res.status(500).json({ error: 'send failed' }); }
 }
 
-// ---------- Now Playing ----------
-app.post('/api/nowplaying/:hostId', (req, res) => sendAgentQuery(req.params.hostId, 'nowplaying', {}, res));
-
 // ---------- List Apps ----------
 app.post('/api/list-apps/:hostId', (req, res) => sendAgentQuery(req.params.hostId, 'list_apps', {}, res, 15000));
 

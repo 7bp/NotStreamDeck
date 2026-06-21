@@ -125,26 +125,6 @@ const [serverVersion, setServerVersion] = useState(null);
     if (config?.version) setServerVersion(config.version);
   }, [config]);
 
-  // Now Playing
-  const [nowplaying, setNowplaying] = useState(null);
-  const npTimer = useRef(null);
-
-  useEffect(() => {
-    if (view !== 'deck') { setNowplaying(null); return; }
-    const onlineHost = hosts?.find((h) => hostStatus[h.id]?.status === 'online');
-    if (!onlineHost) { setNowplaying(null); return; }
-
-    const fetchNp = () => {
-      fetch(`/api/nowplaying/${onlineHost.id}`, { method: 'POST' })
-        .then((r) => r.json())
-        .then((d) => { if (d.ok && d.data?.hasTrack) setNowplaying(d.data); else setNowplaying(null); })
-        .catch(() => {});
-    };
-    fetchNp();
-    npTimer.current = setInterval(fetchNp, 10000);
-    return () => clearInterval(npTimer.current);
-  }, [view, hosts, hostStatus]);
-
   const handleAddKey = useCallback((pageId, row, col) => {
     const page = pages.find((p) => p.id === pageId);
     if (!page) return;
@@ -299,7 +279,6 @@ const [serverVersion, setServerVersion] = useState(null);
           pageCount={pages.length}
           timeStr={timeStr}
           editMode={editMode}
-          nowplaying={nowplaying}
           serverVersion={serverVersion}
           onNavigate={handleNavigate}
           onPrev={() => setActivePageIdx((i) => Math.max(0, i - 1))}

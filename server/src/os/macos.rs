@@ -128,10 +128,6 @@ impl OSAdapter for MacOSAdapter {
         }
     }
 
-    fn nowplaying(&self) -> String {
-        String::new()
-    }
-
     fn list_apps(&self) -> String {
         use serde_json::json;
         let mut apps: Vec<serde_json::Value> = Vec::new();
