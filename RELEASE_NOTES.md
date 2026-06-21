@@ -1,3 +1,7 @@
+## v0.1.10
+
+- Change: removed nowplaying/playback detection entirely — no more polling, no more AppleScript/nowplaying-cli queries, no Music app launches, no wasted CPU on any platform
+
 ## v0.1.9
 
 - Fix: replace tokio async WebSocket with blocking tungstenite to eliminate ~5% idle CPU on Windows. The tokio runtime's I/O driver (even single-threaded) burned cycles polling for IOCP events. Blocking `socket.read()` with a 15s timeout parks the thread in the kernel's `recv()` syscall — near 0% CPU when idle.
