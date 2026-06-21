@@ -1,7 +1,7 @@
 use std::sync::{Arc, Mutex, mpsc};
 use std::time::Duration;
 
-use tao::event::{Event, StartCause};
+use tao::event::Event;
 use tao::event_loop::{ControlFlow, EventLoopBuilder};
 #[cfg(target_os = "macos")]
 use tao::platform::macos::{ActivationPolicy, EventLoopExtMacOS};
@@ -94,7 +94,7 @@ pub fn run(
         );
 
         match event {
-            Event::NewEvents(StartCause::Init) | Event::NewEvents(StartCause::Poll) => {
+            Event::NewEvents(_) => {
                 let now = std::time::Instant::now();
                 if now - last_poll < poll_interval {
                     return;
