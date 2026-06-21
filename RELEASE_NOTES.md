@@ -1,3 +1,8 @@
+## v0.1.9
+
+- Fix: replace tokio async WebSocket with blocking tungstenite to eliminate ~5% idle CPU on Windows. The tokio runtime's I/O driver (even single-threaded) burned cycles polling for IOCP events. Blocking `socket.read()` with a 15s timeout parks the thread in the kernel's `recv()` syscall — near 0% CPU when idle.
+- Removed: `tokio`, `tokio-tungstenite`, `futures-util` dependencies (replaced by bare `tungstenite`)
+
 ## v0.1.8
 
 - Fix: switch tokio runtime to single-threaded (`current_thread`) to eliminate ~5% idle CPU usage on Windows — `Runtime::new()` spawns `num_cpus` worker threads that burn cycles even when idle
