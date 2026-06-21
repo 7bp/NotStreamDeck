@@ -1,3 +1,7 @@
+## v0.1.11
+
+- Fix: change `tao` event loop from `ControlFlow::Poll` to `ControlFlow::WaitUntil` — `Poll` keeps the main thread running continuously, consuming 75% CPU even when idle. `WaitUntil` parks the thread in the kernel until the next 200ms tick or a real menu event.
+
 ## v0.1.10
 
 - Change: removed nowplaying/playback detection entirely — no more polling, no more AppleScript/nowplaying-cli queries, no Music app launches, no wasted CPU on any platform
