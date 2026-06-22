@@ -197,15 +197,9 @@ function SettingsPanel({ config, saveConfig, onPreviewScreensaver, clientIP }) {
     { id: 'gradient', label: 'Ambient Gradient' },
     { id: 'weather', label: 'Weather' },
     { id: 'icons', label: 'Icon Slideshow' },
-    { id: 'starfield', label: 'Starfield' },
     { id: 'pulse', label: 'Network Pulse' },
     { id: 'datequote', label: 'Date & Quote' },
     { id: 'photos', label: 'Photo Slideshow' },
-    { id: 'bounce', label: 'Bouncing Logo' },
-    { id: 'fireworks', label: 'Fireworks' },
-    { id: 'aurora', label: 'Aurora' },
-    { id: 'rainbow', label: 'Rainbow' },
-    { id: 'plasma', label: 'Plasma' },
     { id: 'cycle', label: 'Cycle All' },
   ];
   const current = config.screensaver || 'clock';

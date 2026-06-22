@@ -112,8 +112,8 @@ The agent connects to `ws://<server>:<ws_port>`. Configure the agent's `server_u
 - PIN unlocks edit mode or opens full setup
 - Screensaver hidden when IP-restricted
 
-### Screensaver (13 Modes + Cycle All)
-Digital Clock, Ambient Gradient, Weather, Icon Slideshow, Starfield, Network Pulse, Date & Quote, Photo Slideshow, Bouncing Logo, **Fireworks**, **Aurora**, **Rainbow**, **Plasma**, and **Cycle All** (rotates through all 13 at 15s intervals). Configurable timeout (5-300s) and dim overlay opacity (30-100%) in Settings.
+### Screensaver (7 Modes + Cycle All)
+Digital Clock, Ambient Gradient, Weather, Icon Slideshow, Network Pulse, Date & Quote, Photo Slideshow, and **Cycle All** (rotates through all 7 at 15s intervals). Configurable timeout (5-300s) and dim overlay opacity (30-100%) in Settings.
 
 ### Import / Export
 Export all pages and keys as a JSON file, import to restore or transfer configurations between instances.

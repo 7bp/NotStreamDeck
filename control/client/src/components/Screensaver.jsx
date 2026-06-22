@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 
-const MODES = ['clock', 'gradient', 'weather', 'icons', 'starfield', 'pulse', 'datequote', 'photos', 'bounce', 'fireworks', 'aurora', 'rainbow', 'plasma'];
+const MODES = ['clock', 'gradient', 'weather', 'icons', 'pulse', 'datequote', 'photos'];
 
 const quotes = [
   "The best time to plant a tree was 20 years ago.",
@@ -88,41 +88,6 @@ function IconSlideshowMode({ pages }) {
   );
 }
 
-function StarfieldMode() {
-  const canvasRef = useRef(null);
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    let w = canvas.width = window.innerWidth;
-    let h = canvas.height = window.innerHeight;
-    const stars = Array.from({ length: 200 }, () => ({
-      x: Math.random() * w - w / 2, y: Math.random() * h - h / 2, z: Math.random() * w,
-    }));
-    let frame;
-    const draw = () => {
-      w = canvas.width = window.innerWidth;
-      h = canvas.height = window.innerHeight;
-      ctx.fillStyle = 'rgba(0,0,0,0.15)';
-      ctx.fillRect(0, 0, w, h);
-      const cx = w / 2, cy = h / 2;
-      for (const s of stars) {
-        s.z -= 3;
-        if (s.z <= 0) { s.x = (Math.random() - 0.5) * w * 2; s.y = (Math.random() - 0.5) * h * 2; s.z = w; }
-        const px = (s.x / s.z) * w / 2 + cx;
-        const py = (s.y / s.z) * h / 2 + cy;
-        const r = Math.max(0.5, 2 - (s.z / w) * 2);
-        ctx.fillStyle = `rgba(255,255,255,${Math.max(0.2, 1 - s.z / w)})`;
-        ctx.beginPath(); ctx.arc(px, py, r, 0, Math.PI * 2); ctx.fill();
-      }
-      frame = requestAnimationFrame(draw);
-    };
-    frame = requestAnimationFrame(draw);
-    return () => cancelAnimationFrame(frame);
-  }, []);
-  return <canvas ref={canvasRef} style={{ position: 'absolute', inset: 0 }} />;
-}
-
 function PulseMode({ hosts, hostStatus }) {
   useEffect(() => {
     const style = document.createElement('style');
@@ -190,270 +155,6 @@ function PhotoSlideshowMode({ pages }) {
   );
 }
 
-function BounceMode() {
-  const canvasRef = useRef(null);
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    let w = canvas.width = window.innerWidth;
-    let h = canvas.height = window.innerHeight;
-    const size = 48;
-    let x = Math.random() * (w - size), y = Math.random() * (h - size);
-    let dx = 2, dy = 2;
-    const emojis = ['⚡', '🎮', '⚙️', '🔧', '🎯', '🚀', '💻', '🖥️'];
-    let emoji = emojis[Math.floor(Math.random() * emojis.length)];
-    let hue = 0;
-    const handleResize = () => { w = canvas.width = window.innerWidth; h = canvas.height = window.innerHeight; };
-    window.addEventListener('resize', handleResize);
-    let frame;
-    const draw = () => {
-      ctx.clearRect(0, 0, w, h);
-      x += dx; y += dy;
-      if (x <= 0 || x + size >= w) { dx = -dx; hue = (hue + 30) % 360; emoji = emojis[Math.floor(Math.random() * emojis.length)]; }
-      if (y <= 0 || y + size >= h) { dy = -dy; hue = (hue + 30) % 360; emoji = emojis[Math.floor(Math.random() * emojis.length)]; }
-      ctx.font = `${size}px sans-serif`;
-      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillStyle = `hsl(${hue},50%,50%)`;
-      ctx.fillText(emoji, x + size / 2, y + size / 2);
-      frame = requestAnimationFrame(draw);
-    };
-    frame = requestAnimationFrame(draw);
-    return () => { cancelAnimationFrame(frame); window.removeEventListener('resize', handleResize); };
-  }, []);
-  return <canvas ref={canvasRef} style={{ position: 'absolute', inset: 0 }} />;
-}
-
-function FireworksMode() {
-  const canvasRef = useRef(null);
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    let w = canvas.width = window.innerWidth;
-    let h = canvas.height = window.innerHeight;
-    const handleResize = () => { w = canvas.width = window.innerWidth; h = canvas.height = window.innerHeight; };
-    window.addEventListener('resize', handleResize);
-
-    const rockets = [];
-    const sparks = [];
-    const colors = ['#ff0040', '#ff6600', '#ffcc00', '#00ff88', '#00ccff', '#8844ff', '#ff44ff'];
-
-    function spawnRocket() {
-      const x = Math.random() * w;
-      rockets.push({ x, y: h, vy: -3 - Math.random() * 5 });
-    }
-
-    function explode(x, y) {
-      const count = 60 + Math.floor(Math.random() * 40);
-      const color = colors[Math.floor(Math.random() * colors.length)];
-      for (let i = 0; i < count; i++) {
-        const angle = (Math.PI * 2 * i) / count;
-        const speed = 1.5 + Math.random() * 3;
-        sparks.push({ x, y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, life: 1, color, decay: 0.008 + Math.random() * 0.012 });
-      }
-    }
-
-    let frame;
-    let tick = 0;
-    spawnRocket();
-    const draw = () => {
-      tick++;
-      ctx.fillStyle = 'rgba(0,0,0,0.12)';
-      ctx.fillRect(0, 0, w, h);
-
-      if (tick % 30 === 0 && rockets.length < 4) spawnRocket();
-      if (Math.random() < 0.02) spawnRocket();
-
-      for (let i = rockets.length - 1; i >= 0; i--) {
-        const r = rockets[i];
-        r.y += r.vy;
-        ctx.fillStyle = 'rgba(255,255,255,0.6)';
-        ctx.fillRect(r.x - 1, r.y - 3, 2, 6);
-        if (r.vy < 0) r.vy -= 0.05;
-        if (r.vy >= 0 || r.y < h * 0.15 + Math.random() * h * 0.3) {
-          explode(r.x, r.y);
-          rockets.splice(i, 1);
-        }
-      }
-
-      for (let i = sparks.length - 1; i >= 0; i--) {
-        const s = sparks[i];
-        s.x += s.vx;
-        s.y += s.vy;
-        s.vy += 0.04;
-        s.life -= s.decay;
-        if (s.life <= 0) { sparks.splice(i, 1); continue; }
-        ctx.globalAlpha = s.life;
-        ctx.fillStyle = s.color;
-        ctx.fillRect(s.x - 1, s.y - 1, 2, 2);
-        ctx.globalAlpha = 1;
-      }
-
-      frame = requestAnimationFrame(draw);
-    };
-    frame = requestAnimationFrame(draw);
-    return () => { cancelAnimationFrame(frame); window.removeEventListener('resize', handleResize); };
-  }, []);
-  return <canvas ref={canvasRef} style={{ position: 'absolute', inset: 0 }} />;
-}
-
-function AuroraMode() {
-  const canvasRef = useRef(null);
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    let w = canvas.width = window.innerWidth;
-    let h = canvas.height = window.innerHeight;
-    const handleResize = () => { w = canvas.width = window.innerWidth; h = canvas.height = window.innerHeight; };
-    window.addEventListener('resize', handleResize);
-
-    let t = 0;
-    const layers = [
-      { y: 0.15, height: 0.2, speed: 0.3, color: [0, 180, 255], amp: 60 },
-      { y: 0.25, height: 0.25, speed: 0.5, color: [120, 255, 120], amp: 80 },
-      { y: 0.35, height: 0.2, speed: 0.4, color: [200, 100, 255], amp: 50 },
-      { y: 0.45, height: 0.15, speed: 0.6, color: [255, 80, 150], amp: 70 },
-    ];
-
-    let frame;
-    const draw = () => {
-      t += 0.005;
-      ctx.fillStyle = 'rgba(0,0,0,0.03)';
-      ctx.fillRect(0, 0, w, h);
-
-      for (const layer of layers) {
-        const yBase = h * layer.y;
-        const hRange = h * layer.height;
-        for (let x = 0; x < w; x += 2) {
-          const val = Math.sin(x * 0.008 + t * layer.speed) * layer.amp
-            + Math.sin(x * 0.015 + t * layer.speed * 0.7) * layer.amp * 0.5
-            + Math.sin(x * 0.003 + t * layer.speed * 0.4) * layer.amp * 0.3;
-          const alpha = Math.max(0, 1 - Math.abs(val) / (layer.amp * 2));
-          if (alpha < 0.05) continue;
-          const yOff = val;
-          const [r, g, b] = layer.color;
-          ctx.fillStyle = `rgba(${r},${g},${b},${alpha * 0.15})`;
-          ctx.fillRect(x, yBase + yOff - hRange / 2, 2, hRange);
-        }
-      }
-
-      ctx.fillStyle = 'rgba(0,0,0,0.02)';
-      ctx.fillRect(0, 0, w, h * 0.5);
-
-      frame = requestAnimationFrame(draw);
-    };
-    frame = requestAnimationFrame(draw);
-    return () => { cancelAnimationFrame(frame); window.removeEventListener('resize', handleResize); };
-  }, []);
-  return <canvas ref={canvasRef} style={{ position: 'absolute', inset: 0 }} />;
-}
-
-function RainbowMode() {
-  const canvasRef = useRef(null);
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    let w = canvas.width = window.innerWidth;
-    let h = canvas.height = window.innerHeight;
-    const handleResize = () => { w = canvas.width = window.innerWidth; h = canvas.height = window.innerHeight; };
-    window.addEventListener('resize', handleResize);
-
-    let t = 0;
-    let frame;
-    const draw = () => {
-      t += 0.02;
-      ctx.fillStyle = 'rgba(0,0,0,0.05)';
-      ctx.fillRect(0, 0, w, h);
-
-      const bands = 7;
-      for (let i = 0; i < bands; i++) {
-        const hue = ((i / bands) * 360 + t * 20) % 360;
-        const yBase = (h / (bands + 1)) * (i + 1);
-        const amp = 20 + Math.sin(t * 0.5 + i) * 10;
-        for (let x = 0; x < w; x += 3) {
-          const yOff = Math.sin(x * 0.02 + t * 2 + i) * amp;
-          ctx.fillStyle = `hsla(${hue}, 80%, 55%, 0.15)`;
-          ctx.fillRect(x, yBase + yOff - 4, 3, 8);
-        }
-      }
-
-      frame = requestAnimationFrame(draw);
-    };
-    frame = requestAnimationFrame(draw);
-    return () => { cancelAnimationFrame(frame); window.removeEventListener('resize', handleResize); };
-  }, []);
-  return <canvas ref={canvasRef} style={{ position: 'absolute', inset: 0 }} />;
-}
-
-function hslToRgb(h, s, l) {
-  let r, g, b;
-  if (s === 0) { r = g = b = l; } else {
-    const hue2rgb = (p, q, t) => { if (t < 0) t += 1; if (t > 1) t -= 1; if (t < 1/6) return p + (q - p) * 6 * t; if (t < 1/2) return q; if (t < 2/3) return p + (q - p) * (2/3 - t) * 6; return p; };
-    const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
-    const p = 2 * l - q;
-    r = hue2rgb(p, q, h + 1/3);
-    g = hue2rgb(p, q, h);
-    b = hue2rgb(p, q, h - 1/3);
-  }
-  return [r * 255, g * 255, b * 255];
-}
-
-function PlasmaMode() {
-  const canvasRef = useRef(null);
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    let w = canvas.width = window.innerWidth;
-    let h = canvas.height = window.innerHeight;
-    const handleResize = () => { w = canvas.width = window.innerWidth; h = canvas.height = window.innerHeight; };
-    window.addEventListener('resize', handleResize);
-
-    let t = 0;
-    let frame;
-    const draw = () => {
-      t += 0.02;
-      const imageData = ctx.createImageData(w, h);
-      const data = imageData.data;
-
-      for (let y = 0; y < h; y += 2) {
-        for (let x = 0; x < w; x += 2) {
-          const v = Math.sin(x * 0.01 + t)
-            + Math.sin(y * 0.01 + t * 0.6)
-            + Math.sin((x + y) * 0.008 + t * 0.8)
-            + Math.sin(Math.sqrt(x * x + y * y) * 0.008 + t);
-          const hue = (v * 60 + t * 40) % 360;
-          const sat = 80 + Math.sin(t + x * 0.01) * 10;
-          const light = 30 + Math.sin(v + t) * 15;
-
-          const rgb = hslToRgb(hue / 360, sat / 100, light / 100);
-          const idx = (y * w + x) * 4;
-          data[idx] = rgb[0];
-          data[idx + 1] = rgb[1];
-          data[idx + 2] = rgb[2];
-          data[idx + 3] = 255;
-          // Fill adjacent pixel for performance
-          if (x + 1 < w) {
-            data[idx + 4] = rgb[0];
-            data[idx + 5] = rgb[1];
-            data[idx + 6] = rgb[2];
-            data[idx + 7] = 255;
-          }
-        }
-      }
-
-      ctx.putImageData(imageData, 0, 0);
-      frame = requestAnimationFrame(draw);
-    };
-    frame = requestAnimationFrame(draw);
-    return () => { cancelAnimationFrame(frame); window.removeEventListener('resize', handleResize); };
-  }, []);
-  return <canvas ref={canvasRef} style={{ position: 'absolute', inset: 0 }} />;
-}
-
 export default function Screensaver({ mode, timeStr, pages, hosts, hostStatus }) {
   const [cycleIdx, setCycleIdx] = useState(0);
   const actualMode = mode === 'cycle' ? MODES[cycleIdx % MODES.length] : mode;
@@ -470,15 +171,9 @@ export default function Screensaver({ mode, timeStr, pages, hosts, hostStatus })
       case 'gradient': return <GradientMode />;
       case 'weather': return <WeatherMode />;
       case 'icons': return <IconSlideshowMode pages={pages} />;
-      case 'starfield': return <StarfieldMode />;
       case 'pulse': return <PulseMode hosts={hosts} hostStatus={hostStatus} />;
       case 'datequote': return <DateQuoteMode />;
       case 'photos': return <PhotoSlideshowMode pages={pages} />;
-      case 'bounce': return <BounceMode />;
-      case 'fireworks': return <FireworksMode />;
-      case 'aurora': return <AuroraMode />;
-      case 'rainbow': return <RainbowMode />;
-      case 'plasma': return <PlasmaMode />;
       default: return <ClockMode timeStr={timeStr} />;
     }
   };
@@ -492,7 +187,7 @@ export default function Screensaver({ mode, timeStr, pages, hosts, hostStatus })
       overflow: 'hidden',
     }}>
       {renderContent()}
-      {!['gradient', 'starfield', 'photos', 'fireworks', 'aurora', 'rainbow', 'plasma'].includes(actualMode) && (
+      {!['gradient', 'photos'].includes(actualMode) && (
         <span style={{ position: 'absolute', bottom: 12, right: 16, fontSize: '0.65rem', color: '#333', opacity: 0.5 }}>
           {label}
         </span>
