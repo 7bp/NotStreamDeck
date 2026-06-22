@@ -81,13 +81,15 @@ wss.on('connection', (ws) => {
       }
       // If the response contains a notification, store + broadcast it
       if (msg.notification) {
-        const notif = { id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), timestamp: Date.now(), hostId: ws.hostId, hostName: ws.deviceId ? ws.deviceId.slice(0, 8) : 'agent', title: msg.notification.title || '', body: msg.notification.body || '' };
+        const host = store.get().hosts.find((h) => h.id === ws.hostId);
+        const notif = { id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), timestamp: Date.now(), hostId: ws.hostId, hostName: host?.name || 'agent', title: msg.notification.title || '', body: msg.notification.body || '' };
         store.addNotification(notif);
         broadcastFrontend({ type: 'notification', data: notif });
       }
     } else if (msg.type === 'notification') {
       // Agent notification — store + broadcast to frontend
-      const notif = { id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), timestamp: Date.now(), hostId: ws.hostId, hostName: ws.deviceId ? ws.deviceId.slice(0, 8) : 'agent', title: msg.title || '', body: msg.body || '' };
+      const host = store.get().hosts.find((h) => h.id === ws.hostId);
+      const notif = { id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), timestamp: Date.now(), hostId: ws.hostId, hostName: host?.name || 'agent', title: msg.title || '', body: msg.body || '' };
       store.addNotification(notif);
       broadcastFrontend({ type: 'notification', data: notif });
       console.log(`[notif] from ${notif.hostName}: ${notif.title} — ${notif.body}`);
