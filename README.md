@@ -152,9 +152,15 @@ cargo build --release
 # Binary at: target/release/streamdeck-agent
 ```
 
-Cross-compile for Windows:
+Cross-compile for Windows (MinGW, from macOS):
 ```bash
-PATH="/Users/bp/.cargo/bin:$PATH" cargo build --target x86_64-pc-windows-gnu --release
+brew install mingw-w64
+cargo build --target x86_64-pc-windows-gnu --release
+```
+
+Build for Windows natively (MSVC, recommended — avoids AV false positives):
+```bash
+cargo build --target x86_64-pc-windows-msvc --release
 ```
 
 ### 2. Install & Build the Control Server
