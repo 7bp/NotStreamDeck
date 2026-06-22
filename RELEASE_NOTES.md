@@ -1,3 +1,7 @@
+## v0.2.9
+
+- Fix: notification mirroring now watches `NotificationCenter` for `setting visible banner` / `show as banner` events — fires exactly when a notification is displayed to the user
+
 ## v0.2.8
 
 - Fix: macOS build error in notification mirroring (`String` vs `&str` in `push_notif` call)
