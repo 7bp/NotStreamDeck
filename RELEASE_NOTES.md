@@ -1,3 +1,12 @@
+## v0.2.0
+
+- Feature: **Kiosk Mode** — toggle in Settings, hides setup button, locks to grid. Ideal for wall-mounted tablets.
+- Feature: **Multi-Machine Macros** — each macro step can target a different host. Serial (sequential) and parallel execution modes supported.
+- Feature: **Notification Mirror** — agent command notifications (open app, shell, volume, lock, etc.) are aggregated in a frontend panel. Bell icon in the top-right corner. Persisted server-side (last 200).
+- Feature: **App-Filtered Pages** — enable globally in Settings, then assign app names to each page. When the active app on the agent machine matches, only matching pages are shown. Uses foreground app detection on both macOS and Windows.
+- Feature: **Windows App Scanner** — `list_apps` now scans Start Menu + Program Files via PowerShell. Apps appear in the `open_app` dropdown and can be used for page filtering.
+- Agent: `foreground_app` OSAdapter method (returns name of the frontmost window's application)
+
 ## v0.1.16
 
 - Feature: page transition animations — slide-in with fade on prev/next navigation
