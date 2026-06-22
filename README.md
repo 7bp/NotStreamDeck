@@ -151,7 +151,7 @@ Upload `.mp4` or `.webm` files as page backgrounds. Plays automatically, loops, 
 | clipboard | ✓ `pbcopy` | ✓ PowerShell `Set-Clipboard` |
 | volume | ✓ `osascript` | ✓ PowerShell `SendKeys` |
 | lock | ✓ ScreenSaver.app | ✓ `rundll32 LockWorkStation` |
-| list_apps | ✓ `/Applications` scan | ✗ |
+| list_apps | ✓ `/Applications` scan | ✓ PowerShell scan |
 | media_control | ✓ key codes + `nowplaying-cli` | ✓ PowerShell `SendKeys` |
 | foreground_app | ✓ `osascript` | ✓ PowerShell `GetForegroundWindow` |
 
