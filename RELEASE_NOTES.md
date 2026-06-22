@@ -1,3 +1,7 @@
+## v0.3.1
+
+- Fix: removed leftover notification panel markup in StreamDeck.jsx that caused `notifications is not defined` crash
+
 ## v0.3.0
 
 - Removed: notification mirroring feature entirely (frontend bell/panel/toast, agent log stream listener, server store/broadcast). OS-native `adapter.notify()` calls kept.
