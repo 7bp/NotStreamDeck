@@ -186,9 +186,9 @@ pub fn start_notification_listener() {
         #[cfg(target_os = "macos")]
         {
             use std::io::BufRead;
-            // Watch usernotifictiond — the daemon that delivers actual user notifications
+            // Watch NotificationCenter for banner display events (actual notifications shown to user)
             if let Ok(mut child) = std::process::Command::new("log")
-                .args(["stream", "--style", "json", "--predicate", "process == \"usernotifictiond\""])
+                .args(["stream", "--style", "json", "--predicate", "process == \"NotificationCenter\""])
                 .stdout(std::process::Stdio::piped())
                 .stderr(std::process::Stdio::null())
                 .spawn()
@@ -203,9 +203,14 @@ pub fn start_notification_listener() {
                         if line.trim().is_empty() { continue; }
                         if let Ok(event) = serde_json::from_str::<serde_json::Value>(&line) {
                             let msg = event["eventMessage"].as_str().unwrap_or("").to_lowercase();
-                            if msg.contains("deliver") || msg.contains("request") {
-                                let full = event["eventMessage"].as_str().unwrap_or("System");
-                                push_notif("Notification", full);
+                            // Only capture actual banner displays, not internal plumbing
+                            if (msg.contains("setting visible banner") || msg.contains("show as banner"))
+                                && !msg.contains("pending")
+                            {
+                                let app = event["senderImagePath"].as_str().unwrap_or("System");
+                                let short = app.rsplit_once('/').map(|(_, f)| f).unwrap_or(app);
+                                let title = short.trim_end_matches(".app");
+                                push_notif(title, "Notification displayed");
                             }
                         }
                     }
