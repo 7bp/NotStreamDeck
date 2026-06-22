@@ -1,17 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import KeyButton from './KeyButton.jsx';
 
-function relTime(ts) {
-  if (!ts) return '';
-  const s = Math.floor((Date.now() - ts) / 1000);
-  if (s < 60) return `${s}s ago`;
-  const m = Math.floor(s / 60);
-  if (m < 60) return `${m}m ago`;
-  const h = Math.floor(m / 60);
-  if (h < 24) return `${h}h ago`;
-  return `${Math.floor(h / 24)}d ago`;
-}
-
 function WeatherKey({ actionPayload, iconSize, bgColor }) {
   const [temp, setTemp] = useState('--');
   const loc = actionPayload?.location || 'London';
@@ -200,6 +189,16 @@ export default function StreamDeck({ page, pages, hosts, hostStatus, pageIndex, 
     else if (dx < 0 && pageIndex < pageCount - 1) onNext();
   };
 
+  // Close notification panel on outside tap
+  useEffect(() => {
+    if (!showNotifs) return;
+    const handler = (e) => {
+      if (!e.target.closest('[data-notif]')) setShowNotifs?.(false);
+    };
+    document.addEventListener('click', handler);
+    return () => document.removeEventListener('click', handler);
+  }, [showNotifs, setShowNotifs]);
+
   // Kiosk exit: 7 rapid taps on clock
   const kioskTaps = useRef(0);
   const kioskTimer = useRef(null);
@@ -233,11 +232,11 @@ export default function StreamDeck({ page, pages, hosts, hostStatus, pageIndex, 
         </div>
         <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', position: 'relative' }}>
           {!kioskMode && (
-            <button onClick={() => setShowNotifs?.((s) => !s)} style={styles.notifBtn} title="Notifications">
+            <button onClick={() => setShowNotifs?.((s) => !s)} style={styles.notifBtn} title="Notifications" data-notif>
               {notifications?.length > 0 ? `🔔${notifications.length}` : '🔕'}
               {showNotifs && (
-                <div style={styles.notifPanel} onClick={(e) => e.stopPropagation()}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                <div style={styles.notifPanel} data-notif>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
                     <span style={{ fontSize: '0.85rem', color: '#888' }}>Notifications</span>
                     {notifications?.length > 0 && <button onClick={clearNotifs} style={{ background: 'none', border: 'none', color: '#555', cursor: 'pointer', fontSize: '0.75rem' }}>Clear</button>}
                   </div>
@@ -245,10 +244,10 @@ export default function StreamDeck({ page, pages, hosts, hostStatus, pageIndex, 
                     <p style={{ color: '#444', fontSize: '0.8rem', textAlign: 'center', padding: 16 }}>No notifications</p>
                   ) : (
                     notifications.slice(0, 50).map((n) => (
-                      <div key={n.id} style={{ padding: '6px 8px', background: 'rgba(255,255,255,0.03)', borderRadius: 6 }}>
-                        <div style={{ fontSize: '0.7rem', color: '#555', marginBottom: 2 }}>{n.hostName} · {relTime(n.timestamp)}</div>
+                      <div key={n.id} style={{ textAlign: 'left', padding: '8px 10px', background: 'rgba(255,255,255,0.03)', borderRadius: 8 }}>
+                        <div style={{ fontSize: '0.7rem', color: '#555', marginBottom: 3 }}>{n.hostName} · {(() => { const s = Math.floor((Date.now() - n.timestamp) / 1000); return s < 60 ? `${s}s ago` : s < 3600 ? `${Math.floor(s / 60)}m ago` : s < 86400 ? `${Math.floor(s / 3600)}h ago` : `${Math.floor(s / 86400)}d ago`; })()}</div>
                         {n.title && <div style={{ fontSize: '0.8rem', color: '#ccc', fontWeight: 600 }}>{n.title}</div>}
-                        {n.body && <div style={{ fontSize: '0.75rem', color: '#888' }}>{n.body}</div>}
+                        {n.body && <div style={{ fontSize: '0.75rem', color: '#888', lineHeight: 1.3 }}>{n.body}</div>}
                       </div>
                     ))
                   )}

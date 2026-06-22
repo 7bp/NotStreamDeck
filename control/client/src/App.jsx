@@ -212,7 +212,7 @@ const [serverVersion, setServerVersion] = useState(null);
   let visiblePages = pages;
   if (config?.appFilterEnabled && foregroundApp && pages.length > 0) {
     const matched = pages.filter((p) => {
-      const names = p.appNames || [];
+      const names = Array.isArray(p.appNames) ? p.appNames : [];
       return names.length === 0 || names.some((n) => foregroundApp.toLowerCase().includes(n.toLowerCase()));
     });
     if (matched.length > 0) visiblePages = matched;
