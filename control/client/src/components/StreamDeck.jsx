@@ -222,32 +222,7 @@ export default function StreamDeck({ page, pages, hosts, hostStatus, pageIndex, 
           <span style={styles.pageLabel}>{page.name || 'Untitled'}</span>
           <button style={styles.navBtn} onClick={onNext} disabled={pageIndex >= pageCount - 1}>▶</button>
         </div>
-        <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', position: 'relative' }}>
-          {!kioskMode && (
-            <button onClick={() => setShowNotifs?.((s) => !s)} style={styles.notifBtn} title="Notifications" data-notif>
-              {notifications?.length > 0 ? `🔔${notifications.length}` : '🔕'}
-              {showNotifs && (
-                <div style={styles.notifPanel} data-notif>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                    <span style={{ fontSize: '0.85rem', color: '#888' }}>Notifications</span>
-                    {notifications?.length > 0 && <button onClick={clearNotifs} style={{ background: 'none', border: 'none', color: '#555', cursor: 'pointer', fontSize: '0.75rem' }}>Clear</button>}
-                  </div>
-                  {(!notifications || notifications.length === 0) ? (
-                    <p style={{ color: '#444', fontSize: '0.8rem', textAlign: 'center', padding: 16 }}>No notifications</p>
-                  ) : (
-                    notifications.slice(0, 50).map((n) => (
-                      <div key={n.id} style={{ textAlign: 'left', padding: '8px 10px', background: 'rgba(255,255,255,0.03)', borderRadius: 8 }}>
-                        <div style={{ fontSize: '0.7rem', color: '#555', marginBottom: 3 }}>{n.hostName} · {(() => { const s = Math.floor((Date.now() - n.timestamp) / 1000); return s < 60 ? `${s}s ago` : s < 3600 ? `${Math.floor(s / 60)}m ago` : s < 86400 ? `${Math.floor(s / 3600)}h ago` : `${Math.floor(s / 86400)}d ago`; })()}</div>
-                        {n.title && <div style={{ fontSize: '0.8rem', color: '#ccc', fontWeight: 600 }}>{n.title}</div>}
-                        {n.body && <div style={{ fontSize: '0.75rem', color: '#888', lineHeight: 1.3 }}>{n.body}</div>}
-                      </div>
-                    ))
-                  )}
-                </div>
-              )}
-            </button>
-          )}
-        </div>
+        <div style={{ flex: 1 }} />
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <span style={styles.clock} onClick={onClockTap}>{timeStr}</span>
           {!kioskMode && <button style={{ ...styles.setupBtn, opacity: editMode ? 0.9 : 0.4 }} onClick={onSetup} title={editMode ? 'Exit edit mode' : 'Setup'}>{editMode ? '✓' : '⚙️'}</button>}
