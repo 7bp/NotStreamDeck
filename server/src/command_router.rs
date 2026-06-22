@@ -152,3 +152,53 @@ pub fn get_foreground_app() -> String {
     let adapter = os::CurrentOSAdapter;
     adapter.foreground_app()
 }
+
+// ── System notification mirroring ──
+use std::collections::VecDeque;
+use std::sync::{Mutex, OnceLock};
+
+fn notif_cache() -> &'static Mutex<VecDeque<String>> {
+    static CACHE: OnceLock<Mutex<VecDeque<String>>> = OnceLock::new();
+    CACHE.get_or_init(|| {
+        let mut v = VecDeque::new();
+        v.reserve(20);
+        Mutex::new(v)
+    })
+}
+
+fn is_new_notification(id: &str) -> bool {
+    let mut refs = notif_cache().lock().unwrap();
+    if refs.contains(&id.to_string()) {
+        return false;
+    }
+    refs.push_back(id.to_string());
+    if refs.len() > 20 {
+        refs.pop_front();
+    }
+    true
+}
+
+pub fn poll_system_notifications() -> Vec<serde_json::Value> {
+    let mut result = Vec::new();
+
+    #[cfg(target_os = "macos")]
+    if let Ok(out) = std::process::Command::new("log")
+        .args(["show", "--predicate", "subsystem == \"com.apple.notificationcenter\"", "--last", "5s", "--style", "compact"])
+        .output()
+    {
+        let raw = String::from_utf8_lossy(&out.stdout);
+        for line in raw.lines() {
+            if line.contains("posted") || line.contains("title") {
+                let id = format!("mac-{}", line.trim());
+                if !is_new_notification(&id) {
+                    continue;
+                }
+                let title = line.rsplit_once("Notification").map(|(_, r)| r.trim().to_string()).unwrap_or_default();
+                let body = line.rsplit_once(":").map(|(_, r)| r.trim().to_string()).unwrap_or_default();
+                result.push(serde_json::json!({"title": title, "body": body}));
+            }
+        }
+    }
+
+    result
+}

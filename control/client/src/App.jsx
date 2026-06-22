@@ -297,6 +297,7 @@ const [serverVersion, setServerVersion] = useState(null);
         pageIndex={Math.min(activePageIdx, pages.length - 1)} pageCount={pages.length}
         timeStr={timeStr} editMode={false} serverVersion={serverVersion}
         kioskMode={true}
+        notifications={notifications} showNotifs={showNotifs} setShowNotifs={setShowNotifs} clearNotifs={clearNotifs}
         onNavigate={handleNavigate}
         onPrev={() => setActivePageIdx((i) => Math.max(0, i - 1))}
         onNext={() => setActivePageIdx((i) => Math.min(pages.length - 1, i + 1))}
@@ -364,6 +365,7 @@ const [serverVersion, setServerVersion] = useState(null);
           editMode={editMode}
           serverVersion={serverVersion}
           kioskMode={isKiosk}
+          notifications={notifications} showNotifs={showNotifs} setShowNotifs={setShowNotifs} clearNotifs={clearNotifs}
           onNavigate={handleNavigate}
           onPrev={() => setActivePageIdx((i) => Math.max(0, i - 1))}
           onNext={() => setActivePageIdx((i) => Math.min(currPages.length - 1, i + 1))}
@@ -399,42 +401,6 @@ const [serverVersion, setServerVersion] = useState(null);
         </div>
       )}
       {content}
-      {/* Notification bell + panel (not in kiosk mode) */}
-      {!isKiosk && (
-        <>
-          <button onClick={() => setShowNotifs((s) => !s)} style={{
-            position: 'fixed', top: 8, right: 8, zIndex: 9998,
-            background: 'rgba(255,255,255,0.06)', border: 'none', color: '#888', cursor: 'pointer',
-            width: 32, height: 32, borderRadius: '50%', fontSize: '0.9rem',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }} title="Notifications">
-            {notifications.length > 0 ? `🔔${notifications.length}` : '🔕'}
-          </button>
-          {showNotifs && (
-            <div style={{
-              position: 'fixed', top: 44, right: 8, zIndex: 9998, width: 300, maxHeight: '60vh',
-              background: '#1a1a1a', border: '1px solid #2a2a2a', borderRadius: 12, padding: 12,
-              overflow: 'auto', display: 'flex', flexDirection: 'column', gap: 6,
-            }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                <span style={{ fontSize: '0.85rem', color: '#888' }}>Notifications</span>
-                {notifications.length > 0 && <button onClick={clearNotifs} style={{ background: 'none', border: 'none', color: '#555', cursor: 'pointer', fontSize: '0.75rem' }}>Clear</button>}
-              </div>
-              {notifications.length === 0 ? (
-                <p style={{ color: '#444', fontSize: '0.8rem', textAlign: 'center', padding: 16 }}>No notifications</p>
-              ) : (
-                notifications.slice(0, 50).map((n) => (
-                  <div key={n.id} style={{ padding: '6px 8px', background: 'rgba(255,255,255,0.03)', borderRadius: 6 }}>
-                    <div style={{ fontSize: '0.7rem', color: '#555', marginBottom: 2 }}>{n.hostName} · {new Date(n.timestamp).toLocaleTimeString()}</div>
-                    {n.title && <div style={{ fontSize: '0.8rem', color: '#ccc', fontWeight: 600 }}>{n.title}</div>}
-                    {n.body && <div style={{ fontSize: '0.75rem', color: '#888' }}>{n.body}</div>}
-                  </div>
-                ))
-              )}
-            </div>
-          )}
-        </>
-      )}
       {/* Add key modal (from grid edit mode) */}
       {pendingAddKey && (
         <div style={modalOverlay} onClick={() => setPendingAddKey(null)}>

@@ -168,6 +168,12 @@ fn connect_to_server(
                     socket.send(Message::Ping(vec![]))?;
                     last_heartbeat = Instant::now();
                 }
+                // Poll for OS-level notifications and forward them
+                let sys_notifs = command_router::poll_system_notifications();
+                for n in &sys_notifs {
+                    let msg = serde_json::json!({"type": "notification", "title": n["title"], "body": n["body"]});
+                    socket.send(Message::Text(msg.to_string())).ok();
+                }
             }
             Err(tungstenite::Error::ConnectionClosed) => {
                 log!("[streamdeck-agent] Connection lost");

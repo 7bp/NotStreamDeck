@@ -127,7 +127,7 @@ function isVideo(url) {
   return /\.(mp4|webm)(\?|$)/i.test(url);
 }
 
-export default function StreamDeck({ page, pages, hosts, hostStatus, pageIndex, pageCount, onPrev, onNext, onSetup, onExecute, onAddKey, onEditKey, onEditPage, editMode, timeStr, onNavigate, serverVersion, kioskMode }) {
+export default function StreamDeck({ page, pages, hosts, hostStatus, pageIndex, pageCount, onPrev, onNext, onSetup, onExecute, onAddKey, onEditKey, onEditPage, editMode, timeStr, onNavigate, serverVersion, kioskMode, notifications, showNotifs, setShowNotifs, clearNotifs }) {
   const swipeStart = useRef(null);
   const prevIdx = useRef(pageIndex);
   const [slideDir, setSlideDir] = useState(null);
@@ -205,9 +205,35 @@ export default function StreamDeck({ page, pages, hosts, hostStatus, pageIndex, 
           <span style={styles.pageLabel}>{page.name || 'Untitled'}</span>
           <button style={styles.navBtn} onClick={onNext} disabled={pageIndex >= pageCount - 1}>▶</button>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <span style={styles.clock}>{timeStr}</span>
-          {!kioskMode && <button style={{ ...styles.setupBtn, opacity: editMode ? 0.9 : 0.4 }} onClick={onSetup} title={editMode ? 'Exit edit mode' : 'Setup'}>{editMode ? '✓' : '⚙️'}</button>}
+          {!kioskMode && (
+            <>
+              <button onClick={() => setShowNotifs?.((s) => !s)} style={styles.notifBtn} title="Notifications">
+                {notifications?.length > 0 ? `🔔${notifications.length}` : '🔕'}
+              </button>
+              {showNotifs && (
+                <div style={styles.notifPanel}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                    <span style={{ fontSize: '0.85rem', color: '#888' }}>Notifications</span>
+                    {notifications?.length > 0 && <button onClick={clearNotifs} style={{ background: 'none', border: 'none', color: '#555', cursor: 'pointer', fontSize: '0.75rem' }}>Clear</button>}
+                  </div>
+                  {(!notifications || notifications.length === 0) ? (
+                    <p style={{ color: '#444', fontSize: '0.8rem', textAlign: 'center', padding: 16 }}>No notifications</p>
+                  ) : (
+                    notifications.slice(0, 50).map((n) => (
+                      <div key={n.id} style={{ padding: '6px 8px', background: 'rgba(255,255,255,0.03)', borderRadius: 6 }}>
+                        <div style={{ fontSize: '0.7rem', color: '#555', marginBottom: 2 }}>{n.hostName} · {n.timestamp ? new Date(n.timestamp).toLocaleTimeString() : ''}</div>
+                        {n.title && <div style={{ fontSize: '0.8rem', color: '#ccc', fontWeight: 600 }}>{n.title}</div>}
+                        {n.body && <div style={{ fontSize: '0.75rem', color: '#888' }}>{n.body}</div>}
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+              <button style={{ ...styles.setupBtn, opacity: editMode ? 0.9 : 0.4 }} onClick={onSetup} title={editMode ? 'Exit edit mode' : 'Setup'}>{editMode ? '✓' : '⚙️'}</button>
+            </>
+          )}
         </div>
       </div>
 
@@ -302,5 +328,15 @@ const styles = {
     position: 'absolute', bottom: 0, left: 0, right: 0, height: 100,
     background: 'linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 100%)',
     pointerEvents: 'none', zIndex: -1,
+  },
+  notifBtn: {
+    background: 'none', border: 'none', color: '#888', cursor: 'pointer',
+    fontSize: '0.8rem', padding: '2px 4px',
+  },
+  notifPanel: {
+    position: 'absolute', top: 40, right: 50, zIndex: 9998,
+    width: 300, maxHeight: '60vh', background: '#1a1a1a',
+    border: '1px solid #2a2a2a', borderRadius: 12, padding: 12,
+    overflow: 'auto', display: 'flex', flexDirection: 'column', gap: 6,
   },
 };
