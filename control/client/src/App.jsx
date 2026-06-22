@@ -200,6 +200,9 @@ const [serverVersion, setServerVersion] = useState(null);
       if (msg.type === 'notification') {
         pushNotif(msg.data);
       }
+      if (msg.type === 'clear_notifications') {
+        setNotifications([]);
+      }
     }, [setConfig, setHosts, pushNotif]),
   );
 

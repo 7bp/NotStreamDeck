@@ -429,6 +429,7 @@ app.get('/api/notifications', (req, res) => {
 
 app.delete('/api/notifications', (req, res) => {
   store.clearNotifications();
+  broadcastFrontend({ type: 'clear_notifications' });
   res.json({ ok: true });
 });
 
