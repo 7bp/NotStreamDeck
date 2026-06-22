@@ -1,3 +1,10 @@
+## v0.1.16
+
+- Feature: page transition animations — slide-in with fade on prev/next navigation
+- Feature: swipe left/right to navigate between pages (touch devices)
+- Feature: video backgrounds — upload `.mp4`/`.webm` files as page backgrounds (auto-play, loop, muted)
+- Change: upload limit increased from 10 MB to 50 MB
+
 ## v0.1.15
 
 - Feature: PWA fullscreen — manifest `"display": "fullscreen"` (hides chrome on Android) + `requestFullscreen()` on first user interaction (covers desktop)
