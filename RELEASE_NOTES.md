@@ -1,3 +1,9 @@
+## v0.1.14
+
+- Feature: PWA support — service worker with network-first strategy, offline shell with spinner and auto-retry, manifest with standalone display, PWA icons
+- Change: removed heavy canvas screensaver modes (starfield, bounce, fireworks, aurora, rainbow, plasma) — 7 lightweight modes remain
+- Chore: README updates (accurate feature table, binary name, nowplaying removal)
+
 ## v0.1.13
 
 - Fix: switch Windows release build from MinGW (`x86_64-pc-windows-gnu`) to MSVC (`x86_64-pc-windows-msvc`) — MinGW-produced PE binaries trigger heuristic `Wacatac.C` false positives in Windows Defender. MSVC produces standard PE binaries that don't.
