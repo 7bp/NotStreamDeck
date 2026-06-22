@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <rect width="512" height="512" fill="#111" rx="64"/>
+  <circle cx="256" cy="256" r="180" fill="none" stroke="#00b43c" stroke-width="20"/>
+  <text x="256" y="295" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="220" font-weight="700" fill="#00b43c">SD</text>
+</svg>
