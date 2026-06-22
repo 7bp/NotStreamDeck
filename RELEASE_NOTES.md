@@ -1,3 +1,7 @@
+## v0.2.4
+
+- Fix: system notification mirroring rewritten — replaced fragile `log show` polling with a `log stream` background thread that captures NotificationCenter events in real-time via JSON output parsing
+
 ## v0.2.3
 
 - Feature: kiosk mode exit — tap clock 7 times in 3s, enter PIN to disable
