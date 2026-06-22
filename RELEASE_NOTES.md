@@ -1,3 +1,9 @@
+## v0.2.5
+
+- Fix: notification panel closes on outside tap
+- Fix: notification items left-aligned (Android/iOS style)
+- Fix: crash when `appNames` is a string instead of array (defensive `Array.isArray` check)
+
 ## v0.2.4
 
 - Fix: system notification mirroring rewritten — replaced fragile `log show` polling with a `log stream` background thread that captures NotificationCenter events in real-time via JSON output parsing
