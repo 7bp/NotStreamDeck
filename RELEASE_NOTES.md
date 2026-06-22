@@ -1,3 +1,8 @@
+## v0.3.0
+
+- Removed: notification mirroring feature entirely (frontend bell/panel/toast, agent log stream listener, server store/broadcast). OS-native `adapter.notify()` calls kept.
+- Docs: README updated, Windows `list_apps` status corrected
+
 ## v0.2.9
 
 - Fix: notification mirroring now watches `NotificationCenter` for `setting visible banner` / `show as banner` events — fires exactly when a notification is displayed to the user
