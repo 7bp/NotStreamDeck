@@ -1,3 +1,7 @@
+## v0.1.15
+
+- Feature: PWA fullscreen — manifest `"display": "fullscreen"` (hides chrome on Android) + `requestFullscreen()` on first user interaction (covers desktop)
+
 ## v0.1.14
 
 - Feature: PWA support — service worker with network-first strategy, offline shell with spinner and auto-retry, manifest with standalone display, PWA icons
