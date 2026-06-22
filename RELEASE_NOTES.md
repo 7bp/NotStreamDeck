@@ -1,3 +1,8 @@
+## v0.2.6
+
+- Fix: notification clear synced across all frontends via WebSocket broadcast
+- Docs: README fully updated with all new features
+
 ## v0.2.5
 
 - Fix: notification panel closes on outside tap
