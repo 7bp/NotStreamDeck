@@ -1,3 +1,8 @@
+## v0.1.13
+
+- Fix: switch Windows release build from MinGW (`x86_64-pc-windows-gnu`) to MSVC (`x86_64-pc-windows-msvc`) — MinGW-produced PE binaries trigger heuristic `Wacatac.C` false positives in Windows Defender. MSVC produces standard PE binaries that don't.
+- CI: build Windows agent on `windows-latest` runner with native MSVC toolchain
+
 ## v0.1.12
 
 - Fix: handle all `NewEvents` start causes in tray event loop — `WaitUntil` generates `ResumeTimeReached` and `SentEvent`, not `Poll`, so the menu handler was never reached and disable/quit appeared broken
