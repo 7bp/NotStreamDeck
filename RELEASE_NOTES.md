@@ -1,3 +1,7 @@
+## v0.2.7
+
+- Fix: macOS build error in notification mirroring (type mismatch in `push_notif` call)
+
 ## v0.2.6
 
 - Fix: notification clear synced across all frontends via WebSocket broadcast
