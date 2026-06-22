@@ -204,7 +204,8 @@ pub fn start_notification_listener() {
                         if let Ok(event) = serde_json::from_str::<serde_json::Value>(&line) {
                             let msg = event["eventMessage"].as_str().unwrap_or("").to_lowercase();
                             if msg.contains("deliver") || msg.contains("request") {
-                                push_notif("Notification", msg);
+                                let full = event["eventMessage"].as_str().unwrap_or("System");
+                                push_notif("Notification", full);
                             }
                         }
                     }
