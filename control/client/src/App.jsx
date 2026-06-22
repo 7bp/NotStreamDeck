@@ -289,6 +289,7 @@ const [serverVersion, setServerVersion] = useState(null);
       <>
         <StreamDeck
           page={page}
+          pages={pages}
           hosts={hosts}
           hostStatus={hostStatus}
           pageIndex={activePageIdx}

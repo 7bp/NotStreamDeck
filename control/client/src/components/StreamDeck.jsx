@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import KeyButton from './KeyButton.jsx';
 
 function WeatherKey({ actionPayload, iconSize, bgColor }) {
@@ -61,11 +61,7 @@ function TimerKey({ actionPayload, iconSize, bgColor, disabled }) {
   );
 }
 
-export default function StreamDeck({ page, hosts, hostStatus, pageIndex, pageCount, onPrev, onNext, onSetup, onExecute, onAddKey, onEditKey, onEditPage, editMode, timeStr, onNavigate, serverVersion }) {
-  const cols = page.cols || 5;
-  const rows = page.rows || 3;
-  const iconSize = page.iconSize || 64;
-
+function GridPage({ page, hostOnline, pinnedHostId, pinnedHostOnline, pinnedHostName, cols, rows, iconSize, editMode, onAddKey, onEditKey, onExecute, onNavigate, hosts, hostStatus, serverVersion }) {
   const keyMap = {};
   for (const k of (page.keys || [])) keyMap[`${k.row}:${k.col}`] = k;
 
@@ -73,6 +69,80 @@ export default function StreamDeck({ page, hosts, hostStatus, pageIndex, pageCou
   for (let r = 0; r < rows; r++)
     for (let c = 0; c < cols; c++)
       cells.push({ row: r, col: c, key: keyMap[`${r}:${c}`] || null });
+
+  if (pinnedHostId && !pinnedHostOnline) {
+    return (
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+        <span style={{ fontSize: '2rem', marginBottom: 4 }}>💤</span>
+        <span style={{ color: '#666', fontSize: '1.1rem' }}>{pinnedHostName} is offline</span>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: 12, flex: 1, alignContent: 'center', justifyItems: 'center', alignItems: 'center' }}>
+      {cells.map(({ row, col, key }) => {
+        const effectiveHostId = pinnedHostId || key?.hostId;
+        return (
+          <div key={`${row}-${col}`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            {key ? (['weather', 'timer', 'navigate'].includes(key.action?.type) ? (
+              <div onClick={editMode ? () => onEditKey?.(key) : undefined} style={editMode ? { cursor: 'pointer' } : undefined}>
+                {key.action.type === 'weather' ? (
+                  <WeatherKey actionPayload={key.action.payload} iconSize={iconSize} bgColor={key.bgColor} />
+                ) : key.action.type === 'timer' ? (
+                  <TimerKey actionPayload={key.action.payload} iconSize={iconSize} bgColor={key.bgColor} disabled={editMode} />
+                ) : (
+                  <KeyButton
+                    keyData={key}
+                    disabled={false}
+                    onExecute={() => editMode ? onEditKey?.(key) : onNavigate?.(key.action.payload)}
+                    iconSize={iconSize}
+                  />
+                )}
+              </div>
+            ) : (
+              <KeyButton
+                keyData={key}
+                disabled={!editMode && !hostOnline[effectiveHostId]}
+                onExecute={() => editMode ? onEditKey?.(key) : onExecute(key.id, pinnedHostId)}
+                iconSize={iconSize}
+              />
+            )) : editMode ? (
+              <button style={{
+                width: 64, height: 64, borderRadius: '22%', border: '1px dashed rgba(255,255,255,0.15)',
+                background: 'rgba(255,255,255,0.03)', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }} onClick={() => onAddKey(page.id, row, col)} title="Add key">
+                <span style={{ color: '#555', fontSize: '1.5rem', userSelect: 'none' }}>+</span>
+              </button>
+            ) : <div style={{ width: iconSize, height: iconSize }} />}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function isVideo(url) {
+  return /\.(mp4|webm)(\?|$)/i.test(url);
+}
+
+export default function StreamDeck({ page, pages, hosts, hostStatus, pageIndex, pageCount, onPrev, onNext, onSetup, onExecute, onAddKey, onEditKey, onEditPage, editMode, timeStr, onNavigate, serverVersion }) {
+  const swipeStart = useRef(null);
+  const prevIdx = useRef(pageIndex);
+  const [slideDir, setSlideDir] = useState(null);
+
+  useEffect(() => {
+    if (pageIndex > prevIdx.current) setSlideDir('right');
+    else if (pageIndex < prevIdx.current) setSlideDir('left');
+    prevIdx.current = pageIndex;
+    const t = setTimeout(() => setSlideDir(null), 300);
+    return () => clearTimeout(t);
+  }, [pageIndex]);
+
+  const cols = page.cols || 5;
+  const rows = page.rows || 3;
+  const iconSize = page.iconSize || 64;
 
   const hostOnline = {};
   if (hosts) for (const h of hosts) hostOnline[h.id] = hostStatus[h.id]?.status === 'online';
@@ -83,44 +153,52 @@ export default function StreamDeck({ page, hosts, hostStatus, pageIndex, pageCou
   const pinnedHostOnline = pinnedHostId ? hostOnline[pinnedHostId] : true;
   const pinnedHostName = pinnedHostId ? (hosts || []).find((h) => h.id === pinnedHostId)?.name || 'Host' : null;
 
-  const bgStyle = page.backgroundImage
-    ? { backgroundImage: `url(${page.backgroundImage})`, backgroundSize: 'cover', backgroundPosition: 'center' }
-    : {};
+  const bgUrl = page.backgroundImage;
+  const isBgVideo = isVideo(bgUrl);
 
-  if (pinnedHostId && !pinnedHostOnline) {
-    return (
-      <div style={{ ...styles.wrapper, ...bgStyle }}>
-        <div style={styles.topFade} />
-        <div style={styles.bottomFade} />
-        <div style={styles.topBar}>
-          <div style={styles.pageNav}>
-            <button style={styles.navBtn} onClick={onPrev} disabled={pageIndex === 0}>◀</button>
-            <span style={styles.pageLabel}>{page.name || 'Untitled'}</span>
-            <button style={styles.navBtn} onClick={onNext} disabled={pageIndex >= pageCount - 1}>▶</button>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <span style={styles.clock}>{timeStr}</span>
-            <button style={{ ...styles.setupBtn, opacity: editMode ? 0.9 : 0.4 }} onClick={onSetup} title={editMode ? 'Exit edit mode' : 'Setup'}>{editMode ? '✓' : '⚙️'}</button>
-          </div>
-        </div>
-        <div style={styles.offlineMsg}>
-          <span style={{ fontSize: '2rem', marginBottom: 4 }}>💤</span>
-          <span>{pinnedHostName} is offline</span>
-        </div>
-        <div style={styles.dots}>
-          {Array.from({ length: pageCount }, (_, i) => (
-            <span key={i} style={{ ...styles.dot, opacity: i === pageIndex ? 1 : 0.25 }} />
-          ))}
-        </div>
-      </div>
-    );
+  let bgEl = null;
+  if (bgUrl) {
+    if (isBgVideo) {
+      bgEl = (
+        <video
+          src={bgUrl}
+          autoPlay loop muted playsInline
+          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: -1 }}
+        />
+      );
+    } else {
+      bgEl = (
+        <div style={{
+          position: 'absolute', inset: 0, zIndex: -1,
+          backgroundImage: `url(${bgUrl})`, backgroundSize: 'cover', backgroundPosition: 'center',
+        }} />
+      );
+    }
   }
 
+  const onTouchStart = (e) => {
+    swipeStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  };
+  const onTouchEnd = (e) => {
+    if (!swipeStart.current) return;
+    const dx = e.changedTouches[0].clientX - swipeStart.current.x;
+    const dy = e.changedTouches[0].clientY - swipeStart.current.y;
+    swipeStart.current = null;
+    if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+    if (dx > 0 && pageIndex > 0) onPrev();
+    else if (dx < 0 && pageIndex < pageCount - 1) onNext();
+  };
+
+  const animKey = `slide-${pageIndex}-${slideDir}`;
+  const animStyle = slideDir
+    ? { animation: `${slideDir === 'right' ? 'sdSlideInRight' : 'sdSlideInLeft'} 0.25s ease` }
+    : {};
+
   return (
-    <div style={{ ...styles.wrapper, ...bgStyle }}>
+    <div style={{ ...styles.wrapper }} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
       <div style={styles.topFade} />
       <div style={styles.bottomFade} />
-      {/* Top bar */}
+      {bgEl}
       <div style={styles.topBar}>
         <div style={styles.pageNav}>
           <button style={styles.navBtn} onClick={onPrev} disabled={pageIndex === 0}>◀</button>
@@ -133,7 +211,6 @@ export default function StreamDeck({ page, hosts, hostStatus, pageIndex, pageCou
         </div>
       </div>
 
-      {/* Online hosts bar */}
       {onlineHosts.length > 0 && (
         <div style={styles.hostsBar}>
           {onlineHosts.map((h) => {
@@ -149,45 +226,24 @@ export default function StreamDeck({ page, hosts, hostStatus, pageIndex, pageCou
         </div>
       )}
 
-      {/* Grid */}
-      <div style={{ ...styles.grid, gridTemplateColumns: `repeat(${cols}, 1fr)` }}>
-        {cells.map(({ row, col, key }) => {
-          const effectiveHostId = pinnedHostId || key?.hostId;
-          return (
-            <div key={`${row}-${col}`} style={styles.cell}>
-              {key ? (['weather', 'timer', 'navigate'].includes(key.action?.type) ? (
-                <div onClick={editMode ? () => onEditKey?.(key) : undefined} style={editMode ? { cursor: 'pointer' } : undefined}>
-                  {key.action.type === 'weather' ? (
-                    <WeatherKey actionPayload={key.action.payload} iconSize={iconSize} bgColor={key.bgColor} />
-                  ) : key.action.type === 'timer' ? (
-                    <TimerKey actionPayload={key.action.payload} iconSize={iconSize} bgColor={key.bgColor} disabled={editMode} />
-                  ) : (
-                    <KeyButton
-                      keyData={key}
-                      disabled={false}
-                      onExecute={() => editMode ? onEditKey?.(key) : onNavigate?.(key.action.payload)}
-                      iconSize={iconSize}
-                    />
-                  )}
-                </div>
-              ) : (
-                <KeyButton
-                  keyData={key}
-                  disabled={!editMode && !hostOnline[effectiveHostId]}
-                  onExecute={() => editMode ? onEditKey?.(key) : onExecute(key.id, pinnedHostId)}
-                  iconSize={iconSize}
-                />
-              )) : editMode ? (
-                <button style={styles.addCell} onClick={() => onAddKey(page.id, row, col)} title="Add key">
-                  <span style={styles.addPlus}>+</span>
-                </button>
-              ) : <div style={{ width: iconSize, height: iconSize }} />}
-            </div>
-          );
-        })}
+      <div key={animKey} style={{ flex: 1, display: 'flex', flexDirection: 'column', ...animStyle }}>
+        <GridPage
+          page={page}
+          hostOnline={hostOnline}
+          pinnedHostId={pinnedHostId}
+          pinnedHostOnline={pinnedHostOnline}
+          pinnedHostName={pinnedHostName}
+          cols={cols}
+          rows={rows}
+          iconSize={iconSize}
+          editMode={editMode}
+          onAddKey={onAddKey}
+          onEditKey={onEditKey}
+          onExecute={onExecute}
+          onNavigate={onNavigate}
+        />
       </div>
 
-      {/* Edit mode footer */}
       {editMode && (
         <div style={styles.editFooter}>
           <button style={styles.setupLink} onClick={onEditPage}>⚙️ Edit Page</button>
@@ -195,7 +251,6 @@ export default function StreamDeck({ page, hosts, hostStatus, pageIndex, pageCou
         </div>
       )}
 
-      {/* Page dots */}
       <div style={styles.dots}>
         {Array.from({ length: pageCount }, (_, i) => (
           <span key={i} style={{ ...styles.dot, opacity: i === pageIndex ? 1 : 0.25 }} />
@@ -207,19 +262,11 @@ export default function StreamDeck({ page, hosts, hostStatus, pageIndex, pageCou
 
 const styles = {
   wrapper: {
-    display: 'flex',
-    flexDirection: 'column',
-    height: '100%',
-    padding: '12px 16px',
-    gap: 8,
-    position: 'relative',
-    zIndex: 0,
+    display: 'flex', flexDirection: 'column', height: '100%',
+    padding: '12px 16px', gap: 8, position: 'relative', zIndex: 0,
   },
   topBar: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: '4px 0',
+    display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 0',
   },
   pageNav: { display: 'flex', alignItems: 'center', gap: 14 },
   navBtn: {
@@ -232,49 +279,20 @@ const styles = {
     letterSpacing: '0.04em', userSelect: 'none',
   },
   setupBtn: { background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', padding: 4 },
-  hostsBar: {
-    display: 'flex', gap: 8, flexWrap: 'wrap', padding: '4px 0',
-  },
+  hostsBar: { display: 'flex', gap: 8, flexWrap: 'wrap', padding: '4px 0' },
   hostChip: {
     display: 'inline-flex', alignItems: 'center', gap: 5,
     background: 'rgba(40,180,80,0.12)', color: '#5d9', fontSize: '0.75rem',
     padding: '4px 10px', borderRadius: 20, border: '1px solid rgba(40,180,80,0.2)',
   },
-  hostDot: {
-    width: 6, height: 6, borderRadius: '50%', background: '#5d9',
-    display: 'inline-block',
-  },
-  grid: {
-    display: 'grid',
-    gap: 12, flex: 1, alignContent: 'center',
-    justifyItems: 'center', alignItems: 'center',
-  },
-  cell: {
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-  },
-  addCell: {
-    width: 64, height: 64, borderRadius: '22%', border: '1px dashed rgba(255,255,255,0.15)',
-    background: 'rgba(255,255,255,0.03)', cursor: 'pointer',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    transition: 'background 0.15s',
-  },
-  addPlus: {
-    color: '#555', fontSize: '1.5rem', userSelect: 'none',
-  },
-  editFooter: {
-    display: 'flex', justifyContent: 'center', gap: 8, padding: '4px 0',
-  },
+  hostDot: { width: 6, height: 6, borderRadius: '50%', background: '#5d9', display: 'inline-block' },
+  editFooter: { display: 'flex', justifyContent: 'center', gap: 8, padding: '4px 0' },
   setupLink: {
     background: 'rgba(255,255,255,0.06)', border: 'none', color: '#888',
     padding: '6px 16px', borderRadius: 20, fontSize: '0.8rem', cursor: 'pointer',
   },
-  dots: {
-    display: 'flex', justifyContent: 'center', gap: 7, padding: '6px 0',
-  },
-  dot: {
-    width: 7, height: 7, borderRadius: '50%', background: '#555',
-    transition: 'opacity 0.2s',
-  },
+  dots: { display: 'flex', justifyContent: 'center', gap: 7, padding: '6px 0' },
+  dot: { width: 7, height: 7, borderRadius: '50%', background: '#555', transition: 'opacity 0.2s' },
   topFade: {
     position: 'absolute', top: 0, left: 0, right: 0, height: 100,
     background: 'linear-gradient(to bottom, rgba(0,0,0,0.85) 0%, transparent 100%)',
@@ -284,10 +302,5 @@ const styles = {
     position: 'absolute', bottom: 0, left: 0, right: 0, height: 100,
     background: 'linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 100%)',
     pointerEvents: 'none', zIndex: -1,
-  },
-  offlineMsg: {
-    flex: 1, display: 'flex', flexDirection: 'column',
-    alignItems: 'center', justifyContent: 'center', gap: 8,
-    color: '#666', fontSize: '1.1rem',
   },
 };
