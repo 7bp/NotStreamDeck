@@ -121,8 +121,6 @@ fn connect_to_server(
     log!("[streamdeck-agent] Connected");
     status_tx.send(AppStatus::Connected).ok();
 
-    command_router::start_notification_listener();
-
     let hello = serde_json::json!({
         "type": "hello",
         "device_id": device_id,
@@ -169,11 +167,6 @@ fn connect_to_server(
                 if last_heartbeat.elapsed() >= Duration::from_secs(30) {
                     socket.send(Message::Ping(vec![]))?;
                     last_heartbeat = Instant::now();
-                }
-                // Drain queued system notifications and forward them
-                for n in command_router::poll_system_notifications() {
-                    let msg = serde_json::json!({"type": "notification", "title": n["title"], "body": n["body"]});
-                    socket.send(Message::Text(msg.to_string())).ok();
                 }
             }
             Err(tungstenite::Error::ConnectionClosed) => {

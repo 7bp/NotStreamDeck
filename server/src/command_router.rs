@@ -24,14 +24,14 @@ pub fn handle(msg: &Value, token: &str) -> Value {
             log!("[streamdeck-agent] open_app: {}", name);
             adapter.open_app(name);
             adapter.notify("StreamDeck Agent", &format!("Opened: {}", name));
-            json!({"id": id, "ok": true, "error": null, "notification": {"title": "Opened", "body": name}})
+            json!({"id": id, "ok": true, "error": null})
         }
         "shell" => {
             let cmd = msg["payload"]["command"].as_str().unwrap_or("");
             log!("[streamdeck-agent] shell: {}", cmd);
             adapter.run_shell(cmd);
             adapter.notify("StreamDeck Agent", &format!("Ran: {}", cmd));
-            json!({"id": id, "ok": true, "error": null, "notification": {"title": "Shell", "body": cmd}})
+            json!({"id": id, "ok": true, "error": null})
         }
         "hotkey" => {
             let keys: Vec<String> = msg["payload"]["keys"]
@@ -41,27 +41,27 @@ pub fn handle(msg: &Value, token: &str) -> Value {
             log!("[streamdeck-agent] hotkey: {:?}", keys);
             adapter.hotkey(&keys);
             adapter.notify("StreamDeck Agent", &format!("Hotkey: {:?}", keys));
-            json!({"id": id, "ok": true, "error": null, "notification": {"title": "Hotkey", "body": format!("{:?}", keys)}})
+            json!({"id": id, "ok": true, "error": null})
         }
         "clipboard" => {
             let text = msg["payload"]["text"].as_str().unwrap_or("");
             log!("[streamdeck-agent] clipboard: {} chars", text.len());
             adapter.set_clipboard(text);
             adapter.notify("StreamDeck Agent", "Text copied to clipboard");
-            json!({"id": id, "ok": true, "error": null, "notification": {"title": "Clipboard", "body": format!("{} chars copied", text.len())}})
+            json!({"id": id, "ok": true, "error": null})
         }
         "volume" => {
             let level = msg["payload"]["level"].as_u64().unwrap_or(50) as u8;
             log!("[streamdeck-agent] volume: {}", level);
             adapter.set_volume(level);
             adapter.notify("StreamDeck Agent", &format!("Volume set to {}", level));
-            json!({"id": id, "ok": true, "error": null, "notification": {"title": "Volume", "body": format!("Set to {}", level)}})
+            json!({"id": id, "ok": true, "error": null})
         }
         "lock" => {
             log!("[streamdeck-agent] lock");
             adapter.lock_screen();
             adapter.notify("StreamDeck Agent", "Screen locked");
-            json!({"id": id, "ok": true, "error": null, "notification": {"title": "Lock", "body": "Screen locked"}})
+            json!({"id": id, "ok": true, "error": null})
         }
         "list_apps" => {
             log!("[streamdeck-agent] list_apps");
@@ -153,80 +153,4 @@ pub fn get_foreground_app() -> String {
     adapter.foreground_app()
 }
 
-// ── System notification mirroring ──
-use std::collections::VecDeque;
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Mutex, OnceLock};
-use std::thread;
 
-static NOTIF_RUNNING: AtomicBool = AtomicBool::new(false);
-
-fn notif_queue() -> &'static Mutex<VecDeque<serde_json::Value>> {
-    static Q: OnceLock<Mutex<VecDeque<serde_json::Value>>> = OnceLock::new();
-    Q.get_or_init(|| {
-        let mut v = VecDeque::new();
-        v.reserve(50);
-        Mutex::new(v)
-    })
-}
-
-fn push_notif(title: &str, body: &str) {
-    notif_queue().lock().unwrap().push_back(serde_json::json!({
-        "title": title,
-        "body": body,
-    }));
-}
-
-pub fn start_notification_listener() {
-    if NOTIF_RUNNING.swap(true, Ordering::Relaxed) {
-        return;
-    }
-
-    thread::spawn(move || {
-        #[cfg(target_os = "macos")]
-        {
-            use std::io::BufRead;
-            // Watch NotificationCenter for banner display events (actual notifications shown to user)
-            if let Ok(mut child) = std::process::Command::new("log")
-                .args(["stream", "--style", "json", "--predicate", "process == \"NotificationCenter\""])
-                .stdout(std::process::Stdio::piped())
-                .stderr(std::process::Stdio::null())
-                .spawn()
-            {
-                if let Some(stdout) = child.stdout.take() {
-                    let reader = std::io::BufReader::new(stdout);
-                    for line in reader.lines() {
-                        let line = match line {
-                            Ok(l) => l,
-                            Err(_) => break,
-                        };
-                        if line.trim().is_empty() { continue; }
-                        if let Ok(event) = serde_json::from_str::<serde_json::Value>(&line) {
-                            let msg = event["eventMessage"].as_str().unwrap_or("").to_lowercase();
-                            // Only capture actual banner displays, not internal plumbing
-                            if (msg.contains("setting visible banner") || msg.contains("show as banner"))
-                                && !msg.contains("pending")
-                            {
-                                let app = event["senderImagePath"].as_str().unwrap_or("System");
-                                let short = app.rsplit_once('/').map(|(_, f)| f).unwrap_or(app);
-                                let title = short.trim_end_matches(".app");
-                                push_notif(title, "Notification displayed");
-                            }
-                        }
-                    }
-                }
-                let _ = child.wait();
-            }
-        }
-        NOTIF_RUNNING.store(false, Ordering::Relaxed);
-    });
-}
-
-pub fn poll_system_notifications() -> Vec<serde_json::Value> {
-    let mut q = notif_queue().lock().unwrap();
-    let mut result = Vec::new();
-    while let Some(n) = q.pop_front() {
-        result.push(n);
-    }
-    result
-}

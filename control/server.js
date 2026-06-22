@@ -421,17 +421,6 @@ app.post('/api/list-apps/:hostId', (req, res) => sendAgentQuery(req.params.hostI
 // ---------- Foreground App ----------
 app.post('/api/foreground-app/:hostId', (req, res) => sendAgentQuery(req.params.hostId, 'foreground_app', {}, res, 5000));
 
-// ---------- Notifications ----------
-app.get('/api/notifications', (req, res) => {
-  const config = store.get();
-  res.json(config.notifications || []);
-});
-
-app.delete('/api/notifications', (req, res) => {
-  store.clearNotifications();
-  broadcastFrontend({ type: 'clear_notifications' });
-  res.json({ ok: true });
-});
 
 // ---------- Upload endpoint ----------
 app.post('/api/upload', upload.single('file'), (req, res) => {

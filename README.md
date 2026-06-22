@@ -8,7 +8,7 @@ A Rust daemon runs in the background on each target machine, connected via WebSo
 
 ## Outcome
 
-Live on your LAN, cross-platform, with 11 action types, multi-machine macros, foreground app filtering, notification mirroring, kiosk mode, page transitions, swipe navigation, video backgrounds, 7 screensaver modes, PWA support, multi-page grids, IP access control, and import/export. MIT licensed.
+Live on your LAN, cross-platform, with 11 action types, multi-machine macros, foreground app filtering, kiosk mode, page transitions, swipe navigation, video backgrounds, 7 screensaver modes, PWA support, multi-page grids, IP access control, and import/export. MIT licensed.
 
 ## Screenshots
 
@@ -127,9 +127,6 @@ Toggle in Settings. Hides all setup UI, locks to the action grid. Tap the clock 
 ### App-Filtered Pages
 When enabled globally in Settings, each page can list app names (comma-separated). The grid only shows pages whose app names match the foreground application on the agent machine. Uses `osascript` (macOS) or `GetForegroundWindow` (Windows) to detect the active app.
 
-### Notification Mirror
-Every command execution (open app, shell, lock, etc.) sends a notification to the frontend. A bell icon in the title bar shows a count; tap to expand the panel. Notifications appear as a toast at the top center — tap to expand, auto-dismiss after 5s. Cleared across all connected frontends simultaneously.
-
 ### Multi-Machine Macros
 Each step in a macro can target a different host machine. Supports serial (sequential) and parallel execution modes. Configure hosts per step in the macro editor.
 
@@ -244,8 +241,7 @@ Open `http://localhost:3000` in a browser.
   "screensaverTimeout": 30,
   "screensaverOpacity": 1,
   "hosts": [],
-  "pages": [...],
-  "notifications": []
+  "pages": [...]
 }
 ```
 
@@ -312,7 +308,5 @@ poorsteamdeck/
 | POST | `/api/verify-pin` | Verify PIN `{ pin: "..." }` |
 | POST | `/api/list-apps/:hostId` | List installed apps from agent |
 | POST | `/api/foreground-app/:hostId` | Get foreground app name from agent |
-| GET | `/api/notifications` | List notifications |
-| DELETE | `/api/notifications` | Clear all notifications |
 | GET | `/api/myip` | Client IP address |
 | POST | `/api/upload` | Upload an image or video file |

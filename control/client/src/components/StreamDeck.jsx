@@ -127,7 +127,7 @@ function isVideo(url) {
   return /\.(mp4|webm)(\?|$)/i.test(url);
 }
 
-export default function StreamDeck({ page, pages, hosts, hostStatus, pageIndex, pageCount, onPrev, onNext, onSetup, onExecute, onAddKey, onEditKey, onEditPage, editMode, timeStr, onNavigate, serverVersion, kioskMode, notifications, showNotifs, setShowNotifs, clearNotifs, onExitKiosk }) {
+export default function StreamDeck({ page, pages, hosts, hostStatus, pageIndex, pageCount, onPrev, onNext, onSetup, onExecute, onAddKey, onEditKey, onEditPage, editMode, timeStr, onNavigate, serverVersion, kioskMode, onExitKiosk }) {
   const swipeStart = useRef(null);
   const prevIdx = useRef(pageIndex);
   const [slideDir, setSlideDir] = useState(null);
@@ -189,15 +189,7 @@ export default function StreamDeck({ page, pages, hosts, hostStatus, pageIndex, 
     else if (dx < 0 && pageIndex < pageCount - 1) onNext();
   };
 
-  // Close notification panel on outside tap
-  useEffect(() => {
-    if (!showNotifs) return;
-    const handler = (e) => {
-      if (!e.target.closest('[data-notif]')) setShowNotifs?.(false);
-    };
-    document.addEventListener('click', handler);
-    return () => document.removeEventListener('click', handler);
-  }, [showNotifs, setShowNotifs]);
+
 
   // Kiosk exit: 7 rapid taps on clock
   const kioskTaps = useRef(0);
@@ -371,15 +363,5 @@ const styles = {
     position: 'absolute', bottom: 0, left: 0, right: 0, height: 100,
     background: 'linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 100%)',
     pointerEvents: 'none', zIndex: -1,
-  },
-  notifBtn: {
-    background: 'none', border: 'none', color: '#888', cursor: 'pointer',
-    fontSize: '0.8rem', padding: '2px 4px',
-  },
-  notifPanel: {
-    position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)', zIndex: 9998,
-    width: 320, maxHeight: '60vh', background: '#1a1a1a', marginTop: 6,
-    border: '1px solid #2a2a2a', borderRadius: 12, padding: 12,
-    overflow: 'auto', display: 'flex', flexDirection: 'column', gap: 6, boxShadow: '0 4px 24px rgba(0,0,0,0.5)',
   },
 };
