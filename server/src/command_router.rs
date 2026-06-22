@@ -155,50 +155,81 @@ pub fn get_foreground_app() -> String {
 
 // ── System notification mirroring ──
 use std::collections::VecDeque;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Mutex, OnceLock};
+use std::thread;
 
-fn notif_cache() -> &'static Mutex<VecDeque<String>> {
-    static CACHE: OnceLock<Mutex<VecDeque<String>>> = OnceLock::new();
-    CACHE.get_or_init(|| {
+static NOTIF_RUNNING: AtomicBool = AtomicBool::new(false);
+
+fn notif_queue() -> &'static Mutex<VecDeque<serde_json::Value>> {
+    static Q: OnceLock<Mutex<VecDeque<serde_json::Value>>> = OnceLock::new();
+    Q.get_or_init(|| {
         let mut v = VecDeque::new();
-        v.reserve(20);
+        v.reserve(50);
         Mutex::new(v)
     })
 }
 
-fn is_new_notification(id: &str) -> bool {
-    let mut refs = notif_cache().lock().unwrap();
-    if refs.contains(&id.to_string()) {
-        return false;
+pub fn start_notification_listener() {
+    if NOTIF_RUNNING.swap(true, Ordering::Relaxed) {
+        return;
     }
-    refs.push_back(id.to_string());
-    if refs.len() > 20 {
-        refs.pop_front();
+
+    thread::spawn(move || {
+        #[cfg(target_os = "macos")]
+        {
+            use std::io::BufRead;
+            if let Ok(mut child) = std::process::Command::new("log")
+                .args(["stream", "--style", "json", "--predicate", "process == \"NotificationCenter\"", "--source"])
+                .stdout(std::process::Stdio::piped())
+                .stderr(std::process::Stdio::null())
+                .spawn()
+            {
+                if let Some(stdout) = child.stdout.take() {
+                    let reader = std::io::BufReader::new(stdout);
+                    for line in reader.lines() {
+                        let line = match line {
+                            Ok(l) => l,
+                            Err(_) => break,
+                        };
+                        if line.trim().is_empty() { continue; }
+                        if let Ok(event) = serde_json::from_str::<serde_json::Value>(&line) {
+                            let msg = event["eventMessage"].as_str().unwrap_or("").to_string();
+                            if msg.contains("posted") || msg.contains("title:") {
+                                let title = extract_notif_field(&msg, "title");
+                                let body = extract_notif_field(&msg, "body");
+                                let app = event["process"].as_str().unwrap_or("NotificationCenter").to_string();
+                                notif_queue().lock().unwrap().push_back(serde_json::json!({
+                                    "title": if title.is_empty() { &app } else { &title },
+                                    "body": body,
+                                }));
+                            }
+                        }
+                    }
+                }
+                let _ = child.wait();
+            }
+        }
+        NOTIF_RUNNING.store(false, Ordering::Relaxed);
+    });
+}
+
+fn extract_notif_field(msg: &str, field: &str) -> String {
+    let pattern = format!("{}:", field);
+    if let Some(start) = msg.find(&pattern) {
+        let rest = &msg[start + pattern.len()..];
+        let end = rest.find(',').unwrap_or_else(|| rest.find(';').unwrap_or(rest.len()));
+        let val = rest[..end].trim().trim_matches('"').trim();
+        if !val.is_empty() { return val.to_string(); }
     }
-    true
+    String::new()
 }
 
 pub fn poll_system_notifications() -> Vec<serde_json::Value> {
+    let mut q = notif_queue().lock().unwrap();
     let mut result = Vec::new();
-
-    #[cfg(target_os = "macos")]
-    if let Ok(out) = std::process::Command::new("log")
-        .args(["show", "--predicate", "subsystem == \"com.apple.notificationcenter\"", "--last", "5s", "--style", "compact"])
-        .output()
-    {
-        let raw = String::from_utf8_lossy(&out.stdout);
-        for line in raw.lines() {
-            if line.contains("posted") || line.contains("title") {
-                let id = format!("mac-{}", line.trim());
-                if !is_new_notification(&id) {
-                    continue;
-                }
-                let title = line.rsplit_once("Notification").map(|(_, r)| r.trim().to_string()).unwrap_or_default();
-                let body = line.rsplit_once(":").map(|(_, r)| r.trim().to_string()).unwrap_or_default();
-                result.push(serde_json::json!({"title": title, "body": body}));
-            }
-        }
+    while let Some(n) = q.pop_front() {
+        result.push(n);
     }
-
     result
 }

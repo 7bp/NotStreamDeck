@@ -121,6 +121,8 @@ fn connect_to_server(
     log!("[streamdeck-agent] Connected");
     status_tx.send(AppStatus::Connected).ok();
 
+    command_router::start_notification_listener();
+
     let hello = serde_json::json!({
         "type": "hello",
         "device_id": device_id,
@@ -168,9 +170,8 @@ fn connect_to_server(
                     socket.send(Message::Ping(vec![]))?;
                     last_heartbeat = Instant::now();
                 }
-                // Poll for OS-level notifications and forward them
-                let sys_notifs = command_router::poll_system_notifications();
-                for n in &sys_notifs {
+                // Drain queued system notifications and forward them
+                for n in command_router::poll_system_notifications() {
                     let msg = serde_json::json!({"type": "notification", "title": n["title"], "body": n["body"]});
                     socket.send(Message::Text(msg.to_string())).ok();
                 }
