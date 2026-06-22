@@ -112,8 +112,8 @@ The agent connects to `ws://<server>:<ws_port>`. Configure the agent's `server_u
 - PIN unlocks edit mode or opens full setup
 - Screensaver hidden when IP-restricted
 
-### Screensaver (13 Modes)
-Digital Clock, Ambient Gradient, Weather, Icon Slideshow, Starfield, Network Pulse, Date & Quote, Photo Slideshow, Bouncing Logo, **Fireworks**, **Aurora**, **Rainbow**, **Plasma**, Cycle All. Configurable timeout (5-300s) and dim overlay opacity (30-100%) in Settings.
+### Screensaver (13 Modes + Cycle All)
+Digital Clock, Ambient Gradient, Weather, Icon Slideshow, Starfield, Network Pulse, Date & Quote, Photo Slideshow, Bouncing Logo, **Fireworks**, **Aurora**, **Rainbow**, **Plasma**, and **Cycle All** (rotates through all 13 at 15s intervals). Configurable timeout (5-300s) and dim overlay opacity (30-100%) in Settings.
 
 ### Import / Export
 Export all pages and keys as a JSON file, import to restore or transfer configurations between instances.
@@ -126,21 +126,21 @@ Export all pages and keys as a JSON file, import to restore or transfer configur
 
 | Feature | macOS | Windows |
 |---------|-------|---------|
-| open_app | ✓ `open -a` | stub |
-| shell | ✓ `sh -c` | stub |
-| hotkey | ✓ `osascript` | stub |
-| notify | ✓ `osascript` | stub |
-| clipboard | ✓ `pbcopy` | stub |
-| volume | ✓ `osascript` | stub |
-| lock | ✓ `/System/Library/.../ScreenSaver.app` | stub |
-| list_apps | ✓ `/Applications` scan | stub |
-| media_control | ✓ key codes + `nowplaying-cli` | stub |
+| open_app | ✓ `open -a` | ✓ `cmd /C start` |
+| shell | ✓ `sh -c` | ✓ `cmd /C` |
+| hotkey | ✓ `osascript` | ✗ |
+| notify | ✓ `osascript` | ✓ PowerShell balloon |
+| clipboard | ✓ `pbcopy` | ✓ PowerShell `Set-Clipboard` |
+| volume | ✓ `osascript` | ✓ PowerShell `SendKeys` |
+| lock | ✓ ScreenSaver.app | ✓ `rundll32 LockWorkStation` |
+| list_apps | ✓ `/Applications` scan | ✗ |
+| media_control | ✓ key codes + `nowplaying-cli` | ✓ PowerShell `SendKeys` |
 
 ## Getting Started
 
 ### Prerequisites
 
-- **macOS** (agent), or cross-compile for Windows
+- **macOS** or **Windows** (agent)
 - **Node.js** 18+ (control server)
 - **Rust** toolchain (agent build)
 
@@ -149,7 +149,7 @@ Export all pages and keys as a JSON file, import to restore or transfer configur
 ```bash
 cd server
 cargo build --release
-# Binary at: target/release/streamdeck-agent
+# Binary at: target/release/notstreamdeck-agent
 ```
 
 Cross-compile for Windows (MinGW, from macOS):
@@ -183,7 +183,7 @@ node server.js
 
 # Start the agent (in another terminal)
 cd server
-./target/release/streamdeck-agent
+./target/release/notstreamdeck-agent
 ```
 
 The agent connects to `ws://127.0.0.1:8080` by default. Configure via system tray menu (right-click icon → Set Server URL / Set Token).
@@ -198,7 +198,7 @@ Open `http://localhost:3000` in a browser.
 
 ## Configuration
 
-### Agent (`~/Library/Application Support/streamdeck-agent/config.json`)
+### Agent (config path depends on platform — `~/.config/streamdeck-agent/config.json` on Linux, `~/Library/Application Support/streamdeck-agent/config.json` on macOS)
 ```json
 {
   "server_url": "ws://127.0.0.1:8080",
@@ -230,7 +230,7 @@ Open `http://localhost:3000` in a browser.
 poorsteamdeck/
 ├── server/                          # Rust agent
 │   ├── Cargo.toml
-│   ├── .cargo/config.toml           # Windows cross-compile linker
+│   ├── .cargo/config.toml           # Windows cross-compile linker (MinGW)
 │   └── src/
 │       ├── main.rs                  # Entry point, VERSION const
 │       ├── config.rs                # Config load/save
@@ -240,7 +240,7 @@ poorsteamdeck/
 │       └── os/
 │           ├── mod.rs               # OSAdapter trait
 │           ├── macos.rs             # macOS implementations
-│           └── windows.rs           # Windows stubs
+│           └── windows.rs           # Windows implementations
 │
 └── control/                         # Control server (Node.js)
     ├── server.js                    # Express + dual WebSocket
