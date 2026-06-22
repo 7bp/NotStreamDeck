@@ -125,6 +125,22 @@ const [serverVersion, setServerVersion] = useState(null);
     if (config?.version) setServerVersion(config.version);
   }, [config]);
 
+  // Request fullscreen on first user interaction
+  useEffect(() => {
+    const handler = () => {
+      const el = document.documentElement;
+      if (el.requestFullscreen) el.requestFullscreen().catch(() => {});
+      document.removeEventListener('click', handler);
+      document.removeEventListener('touchstart', handler);
+    };
+    document.addEventListener('click', handler, { once: true });
+    document.addEventListener('touchstart', handler, { once: true });
+    return () => {
+      document.removeEventListener('click', handler);
+      document.removeEventListener('touchstart', handler);
+    };
+  }, []);
+
   const handleAddKey = useCallback((pageId, row, col) => {
     const page = pages.find((p) => p.id === pageId);
     if (!page) return;
