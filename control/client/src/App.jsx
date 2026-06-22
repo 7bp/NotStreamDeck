@@ -161,9 +161,18 @@ const [serverVersion, setServerVersion] = useState(null);
   // Notifications
   const [notifications, setNotifications] = useState([]);
   const [showNotifs, setShowNotifs] = useState(false);
+  const [toast, setToast] = useState(null);
+  const toastTimer = useRef(null);
 
   useEffect(() => {
     fetch('/api/notifications').then((r) => r.json()).then((data) => { if (Array.isArray(data)) setNotifications(data); }).catch(() => {});
+  }, []);
+
+  const pushNotif = useCallback((n) => {
+    setNotifications((prev) => [n, ...prev].slice(0, 200));
+    setToast(n);
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToast(null), 5000);
   }, []);
 
   useWebSocket(
@@ -189,9 +198,9 @@ const [serverVersion, setServerVersion] = useState(null);
         }
       }
       if (msg.type === 'notification') {
-        setNotifications((prev) => [msg.data, ...prev].slice(0, 200));
+        pushNotif(msg.data);
       }
-    }, [setConfig, setHosts]),
+    }, [setConfig, setHosts, pushNotif]),
   );
 
   const clearNotifs = () => { setNotifications([]); fetch('/api/notifications', { method: 'DELETE' }); };
@@ -401,6 +410,41 @@ const [serverVersion, setServerVersion] = useState(null);
         </div>
       )}
       {content}
+      {/* Toast notification */}
+      {toast && (
+        <div
+          onClick={() => setToast((t) => t ? { ...t, expanded: !t.expanded } : null)}
+          style={{
+            position: 'fixed', top: 16, left: '50%', transform: 'translateX(-50%)', zIndex: 99999,
+            background: toast.expanded ? '#1a1a1a' : 'rgba(26,26,26,0.95)',
+            border: '1px solid #2a2a2a', borderRadius: 12, cursor: 'pointer',
+            width: toast.expanded ? 340 : 'auto', minWidth: 60, maxWidth: 340,
+            padding: toast.expanded ? '16px 20px' : '8px 16px',
+            transition: 'all 0.25s ease', boxShadow: '0 4px 24px rgba(0,0,0,0.5)',
+            display: 'flex', flexDirection: toast.expanded ? 'column' : 'row',
+            alignItems: 'center', gap: 8,
+          }}
+        >
+          {!toast.expanded && (
+            <>
+              <span style={{ fontSize: '0.9rem', flexShrink: 0 }}>🔔</span>
+              <span style={{ fontSize: '0.8rem', color: '#ccc', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 140 }}>{toast.hostName}</span>
+              <span style={{ fontSize: '0.75rem', color: '#999', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 140 }}>{toast.title || toast.body}</span>
+            </>
+          )}
+          {toast.expanded && (
+            <>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                <span style={{ fontSize: '0.8rem', color: '#888' }}>{toast.hostName}</span>
+                <button onClick={(e) => { e.stopPropagation(); setToast(null); }} style={{ background: 'none', border: 'none', color: '#555', cursor: 'pointer', fontSize: '0.9rem' }}>✕</button>
+              </div>
+              {toast.title && <div style={{ fontSize: '0.9rem', color: '#eee', fontWeight: 600, width: '100%' }}>{toast.title}</div>}
+              {toast.body && <div style={{ fontSize: '0.8rem', color: '#999', width: '100%', lineHeight: 1.4 }}>{toast.body}</div>}
+              {toast.timestamp && <div style={{ fontSize: '0.7rem', color: '#555', width: '100%', marginTop: 4 }}>{new Date(toast.timestamp).toLocaleTimeString()}</div>}
+            </>
+          )}
+        </div>
+      )}
       {/* Add key modal (from grid edit mode) */}
       {pendingAddKey && (
         <div style={modalOverlay} onClick={() => setPendingAddKey(null)}>
