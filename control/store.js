@@ -11,6 +11,9 @@ const defaults = {
   allowedIPs: [],
   screensaverTimeout: 30,
   screensaverOpacity: 1,
+  kioskMode: false,
+  appFilterEnabled: false,
+  notifications: [],
   hosts: [],
   pages: [
     {
@@ -167,6 +170,20 @@ function getHostByDeviceId(deviceId) {
   return load().hosts.find((h) => h.deviceId === deviceId) || null;
 }
 
+function addNotification(notif) {
+  const d = load();
+  if (!d.notifications) d.notifications = [];
+  d.notifications.unshift({ id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), timestamp: Date.now(), ...notif });
+  if (d.notifications.length > 200) d.notifications.length = 200; // cap
+  save();
+}
+
+function clearNotifications() {
+  const d = load();
+  d.notifications = [];
+  save();
+}
+
 module.exports = {
   get,
   save,
@@ -183,4 +200,6 @@ module.exports = {
   getKey,
   getHostByDeviceId,
   updateHostVersion,
+  addNotification,
+  clearNotifications,
 };

@@ -208,6 +208,10 @@ export function PageForm({ form, setForm, onSave, onCancel, bgUploading, handleB
           <button style={{ ...styles.smallBtn, marginTop: 4 }} onClick={() => setForm({ ...form, backgroundImage: '' })}>Remove background</button>
         )}
       </div>
+      <div style={styles.field}>
+        <label style={styles.label}>App Filter (comma-separated app names, empty = show always)</label>
+        <input style={styles.input} value={form.appNames || ''} onChange={(e) => setForm({ ...form, appNames: e.target.value })} placeholder="e.g. Code, Terminal, Safari" />
+      </div>
       <div style={{ display: 'flex', gap: 8 }}>
         <button style={styles.saveBtn} onClick={onSave}>Save</button>
         <button style={styles.cancelBtn} onClick={onCancel}>Cancel</button>

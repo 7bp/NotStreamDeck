@@ -74,7 +74,7 @@ const [serverVersion, setServerVersion] = useState(null);
   const [pendingAddKey, setPendingAddKey] = useState(null);
   const [editingKey, setEditingKey] = useState(null);
   const [editingPage, setEditingPage] = useState(null);
-  const [pageForm, setPageForm] = useState({ name: '', cols: 5, rows: 3, iconSize: 64 });
+  const [pageForm, setPageForm] = useState({ name: '', cols: 5, rows: 3, iconSize: 64, appNames: '' });
   const [bgUploading, setBgUploading] = useState(false);
 
   const { config, setConfig, saveConfig } = useConfig();
@@ -141,6 +141,74 @@ const [serverVersion, setServerVersion] = useState(null);
     };
   }, []);
 
+  // Foreground app polling (for app-filtered pages)
+  const [foregroundApp, setForegroundApp] = useState(null);
+  useEffect(() => {
+    if (!config?.appFilterEnabled || view !== 'deck') { setForegroundApp(null); return; }
+    const onlineHost = hosts?.find((h) => hostStatus[h.id]?.status === 'online');
+    if (!onlineHost) { setForegroundApp(null); return; }
+    const poll = () => {
+      fetch(`/api/foreground-app/${onlineHost.id}`, { method: 'POST' })
+        .then((r) => r.json())
+        .then((d) => { if (d.ok) setForegroundApp(d.data?.name || null); })
+        .catch(() => {});
+    };
+    poll();
+    const id = setInterval(poll, 5000);
+    return () => clearInterval(id);
+  }, [config?.appFilterEnabled, view, hosts, hostStatus]);
+
+  // Notifications
+  const [notifications, setNotifications] = useState([]);
+  const [showNotifs, setShowNotifs] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/notifications').then((r) => r.json()).then((data) => { if (Array.isArray(data)) setNotifications(data); }).catch(() => {});
+  }, []);
+
+  useWebSocket(
+    useCallback((msg) => {
+      if (msg.type === 'host_status') {
+        const map = {};
+        for (const h of msg.data) map[h.id] = { status: h.status, version: h.version || null };
+        setHostStatus(map);
+        setHosts((prev) => prev.map((h) => ({ ...h, status: map[h.id]?.status || 'offline' })));
+      }
+      if (msg.type === 'config') {
+        setConfig(msg.data);
+        if (msg.data.version) setServerVersion(msg.data.version);
+        if (msg.data.pages) setPages(msg.data.pages);
+        if (msg.data.hosts) {
+          setHosts((prev) => {
+            const newHosts = msg.data.hosts;
+            return newHosts.map((nh) => {
+              const old = prev.find((p) => p.id === nh.id);
+              return { ...nh, status: old?.status || nh.status || 'offline' };
+            });
+          });
+        }
+      }
+      if (msg.type === 'notification') {
+        setNotifications((prev) => [msg.data, ...prev].slice(0, 200));
+      }
+    }, [setConfig, setHosts]),
+  );
+
+  const clearNotifs = () => { setNotifications([]); fetch('/api/notifications', { method: 'DELETE' }); };
+
+  // Kiosk mode — lock to deck, hide setup
+  const isKiosk = config?.kioskMode;
+
+  // Filter pages by foreground app (when enabled)
+  let visiblePages = pages;
+  if (config?.appFilterEnabled && foregroundApp && pages.length > 0) {
+    const matched = pages.filter((p) => {
+      const names = p.appNames || [];
+      return names.length === 0 || names.some((n) => foregroundApp.toLowerCase().includes(n.toLowerCase()));
+    });
+    if (matched.length > 0) visiblePages = matched;
+  }
+
   const handleAddKey = useCallback((pageId, row, col) => {
     const page = pages.find((p) => p.id === pageId);
     if (!page) return;
@@ -156,13 +224,14 @@ const [serverVersion, setServerVersion] = useState(null);
   const handleEditPage = useCallback(() => {
     const page = pages[activePageIdx] || pages[0];
     if (!page) return;
-    setPageForm({ name: page.name, cols: page.cols, rows: page.rows, iconSize: page.iconSize || 64, hostId: page.hostId || '', backgroundImage: page.backgroundImage || '' });
+    setPageForm({ name: page.name, cols: page.cols, rows: page.rows, iconSize: page.iconSize || 64, hostId: page.hostId || '', backgroundImage: page.backgroundImage || '', appNames: (page.appNames || []).join(', ') });
     setEditingPage(page.id);
   }, [pages, activePageIdx]);
 
   const savePage = useCallback(() => {
     if (!pageForm.name.trim()) return;
-    updatePage(editingPage, pageForm);
+    const updates = { ...pageForm, appNames: pageForm.appNames ? pageForm.appNames.split(',').map((s) => s.trim()).filter(Boolean) : [] };
+    updatePage(editingPage, updates);
     setEditingPage(null);
   }, [pageForm, editingPage, updatePage]);
 
@@ -210,31 +279,6 @@ const [serverVersion, setServerVersion] = useState(null);
     setTimeout(() => setPreviewSs(false), 5000);
   }, []);
 
-  useWebSocket(
-    useCallback((msg) => {
-      if (msg.type === 'host_status') {
-        const map = {};
-        for (const h of msg.data) map[h.id] = { status: h.status, version: h.version || null };
-        setHostStatus(map);
-        setHosts((prev) => prev.map((h) => ({ ...h, status: map[h.id]?.status || 'offline' })));
-      }
-      if (msg.type === 'config') {
-        setConfig(msg.data);
-        if (msg.data.version) setServerVersion(msg.data.version);
-        if (msg.data.pages) setPages(msg.data.pages);
-        if (msg.data.hosts) {
-          setHosts((prev) => {
-            const newHosts = msg.data.hosts;
-            return newHosts.map((nh) => {
-              const old = prev.find((p) => p.id === nh.id);
-              return { ...nh, status: old?.status || nh.status || 'offline' };
-            });
-          });
-        }
-      }
-    }, [setConfig, setHosts]),
-  );
-
   // ---- Render content ----
   let content;
 
@@ -242,6 +286,26 @@ const [serverVersion, setServerVersion] = useState(null);
     content = (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
         <p style={{ color: '#888', fontSize: '1.2rem' }}>Loading…</p>
+      </div>
+    );
+  } else if (isKiosk) {
+    // Kiosk mode — always show deck, skip setup/lock
+    const cp = pages[Math.min(activePageIdx, pages.length - 1)] || pages[0];
+    content = cp ? (
+      <StreamDeck
+        page={cp} pages={pages} hosts={hosts} hostStatus={hostStatus}
+        pageIndex={Math.min(activePageIdx, pages.length - 1)} pageCount={pages.length}
+        timeStr={timeStr} editMode={false} serverVersion={serverVersion}
+        kioskMode={true}
+        onNavigate={handleNavigate}
+        onPrev={() => setActivePageIdx((i) => Math.max(0, i - 1))}
+        onNext={() => setActivePageIdx((i) => Math.min(pages.length - 1, i + 1))}
+        onSetup={() => {}}
+        onExecute={executeKey} onAddKey={() => {}} onEditKey={() => {}} onEditPage={() => {}}
+      />
+    ) : (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+        <p style={{ color: '#888', fontSize: '1.2rem' }}>No pages configured.</p>
       </div>
     );
   } else if (view === 'setup') {
@@ -284,22 +348,25 @@ const [serverVersion, setServerVersion] = useState(null);
     );
   } else {
     const page = pages[activePageIdx] || pages[0];
+    const currPages = visiblePages.length > 0 ? visiblePages : pages;
+    const currPage = currPages[Math.min(activePageIdx, currPages.length - 1)] || currPages[0] || page;
 
     content = (
       <>
         <StreamDeck
-          page={page}
+          page={currPage}
           pages={pages}
           hosts={hosts}
           hostStatus={hostStatus}
-          pageIndex={activePageIdx}
-          pageCount={pages.length}
+          pageIndex={Math.min(activePageIdx, currPages.length - 1)}
+          pageCount={currPages.length}
           timeStr={timeStr}
           editMode={editMode}
           serverVersion={serverVersion}
+          kioskMode={isKiosk}
           onNavigate={handleNavigate}
           onPrev={() => setActivePageIdx((i) => Math.max(0, i - 1))}
-          onNext={() => setActivePageIdx((i) => Math.min(pages.length - 1, i + 1))}
+          onNext={() => setActivePageIdx((i) => Math.min(currPages.length - 1, i + 1))}
           onSetup={requestSetup}
           onExecute={executeKey}
           onAddKey={handleAddKey}
@@ -332,6 +399,42 @@ const [serverVersion, setServerVersion] = useState(null);
         </div>
       )}
       {content}
+      {/* Notification bell + panel (not in kiosk mode) */}
+      {!isKiosk && (
+        <>
+          <button onClick={() => setShowNotifs((s) => !s)} style={{
+            position: 'fixed', top: 8, right: 8, zIndex: 9998,
+            background: 'rgba(255,255,255,0.06)', border: 'none', color: '#888', cursor: 'pointer',
+            width: 32, height: 32, borderRadius: '50%', fontSize: '0.9rem',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }} title="Notifications">
+            {notifications.length > 0 ? `🔔${notifications.length}` : '🔕'}
+          </button>
+          {showNotifs && (
+            <div style={{
+              position: 'fixed', top: 44, right: 8, zIndex: 9998, width: 300, maxHeight: '60vh',
+              background: '#1a1a1a', border: '1px solid #2a2a2a', borderRadius: 12, padding: 12,
+              overflow: 'auto', display: 'flex', flexDirection: 'column', gap: 6,
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                <span style={{ fontSize: '0.85rem', color: '#888' }}>Notifications</span>
+                {notifications.length > 0 && <button onClick={clearNotifs} style={{ background: 'none', border: 'none', color: '#555', cursor: 'pointer', fontSize: '0.75rem' }}>Clear</button>}
+              </div>
+              {notifications.length === 0 ? (
+                <p style={{ color: '#444', fontSize: '0.8rem', textAlign: 'center', padding: 16 }}>No notifications</p>
+              ) : (
+                notifications.slice(0, 50).map((n) => (
+                  <div key={n.id} style={{ padding: '6px 8px', background: 'rgba(255,255,255,0.03)', borderRadius: 6 }}>
+                    <div style={{ fontSize: '0.7rem', color: '#555', marginBottom: 2 }}>{n.hostName} · {new Date(n.timestamp).toLocaleTimeString()}</div>
+                    {n.title && <div style={{ fontSize: '0.8rem', color: '#ccc', fontWeight: 600 }}>{n.title}</div>}
+                    {n.body && <div style={{ fontSize: '0.75rem', color: '#888' }}>{n.body}</div>}
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+        </>
+      )}
       {/* Add key modal (from grid edit mode) */}
       {pendingAddKey && (
         <div style={modalOverlay} onClick={() => setPendingAddKey(null)}>

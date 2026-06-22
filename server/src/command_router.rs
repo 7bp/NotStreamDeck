@@ -24,14 +24,14 @@ pub fn handle(msg: &Value, token: &str) -> Value {
             log!("[streamdeck-agent] open_app: {}", name);
             adapter.open_app(name);
             adapter.notify("StreamDeck Agent", &format!("Opened: {}", name));
-            json!({"id": id, "ok": true, "error": null})
+            json!({"id": id, "ok": true, "error": null, "notification": {"title": "Opened", "body": name}})
         }
         "shell" => {
             let cmd = msg["payload"]["command"].as_str().unwrap_or("");
             log!("[streamdeck-agent] shell: {}", cmd);
             adapter.run_shell(cmd);
             adapter.notify("StreamDeck Agent", &format!("Ran: {}", cmd));
-            json!({"id": id, "ok": true, "error": null})
+            json!({"id": id, "ok": true, "error": null, "notification": {"title": "Shell", "body": cmd}})
         }
         "hotkey" => {
             let keys: Vec<String> = msg["payload"]["keys"]
@@ -41,33 +41,38 @@ pub fn handle(msg: &Value, token: &str) -> Value {
             log!("[streamdeck-agent] hotkey: {:?}", keys);
             adapter.hotkey(&keys);
             adapter.notify("StreamDeck Agent", &format!("Hotkey: {:?}", keys));
-            json!({"id": id, "ok": true, "error": null})
+            json!({"id": id, "ok": true, "error": null, "notification": {"title": "Hotkey", "body": format!("{:?}", keys)}})
         }
         "clipboard" => {
             let text = msg["payload"]["text"].as_str().unwrap_or("");
             log!("[streamdeck-agent] clipboard: {} chars", text.len());
             adapter.set_clipboard(text);
             adapter.notify("StreamDeck Agent", "Text copied to clipboard");
-            json!({"id": id, "ok": true, "error": null})
+            json!({"id": id, "ok": true, "error": null, "notification": {"title": "Clipboard", "body": format!("{} chars copied", text.len())}})
         }
         "volume" => {
             let level = msg["payload"]["level"].as_u64().unwrap_or(50) as u8;
             log!("[streamdeck-agent] volume: {}", level);
             adapter.set_volume(level);
             adapter.notify("StreamDeck Agent", &format!("Volume set to {}", level));
-            json!({"id": id, "ok": true, "error": null})
+            json!({"id": id, "ok": true, "error": null, "notification": {"title": "Volume", "body": format!("Set to {}", level)}})
         }
         "lock" => {
             log!("[streamdeck-agent] lock");
             adapter.lock_screen();
             adapter.notify("StreamDeck Agent", "Screen locked");
-            json!({"id": id, "ok": true, "error": null})
+            json!({"id": id, "ok": true, "error": null, "notification": {"title": "Lock", "body": "Screen locked"}})
         }
         "list_apps" => {
             log!("[streamdeck-agent] list_apps");
             let raw = adapter.list_apps();
             let apps: Vec<Value> = serde_json::from_str(&raw).unwrap_or_default();
             json!({"id": id, "ok": true, "error": null, "data": {"apps": apps}})
+        }
+        "foreground_app" => {
+            log!("[streamdeck-agent] foreground_app");
+            let name = adapter.foreground_app();
+            json!({"id": id, "ok": true, "error": null, "data": {"name": name}})
         }
         "macro" => {
             let actions = msg["payload"]["actions"].as_array().cloned().unwrap_or_default();
@@ -140,4 +145,10 @@ fn execute_subcommand(adapter: &os::CurrentOSAdapter, msg: &Value, cmd_type: &st
         }
         _ => json!({"ok": false, "error": "unknown sub-command type"})
     }
+}
+
+// ── Foreground app polling (called by server on a timer) ──
+pub fn get_foreground_app() -> String {
+    let adapter = os::CurrentOSAdapter;
+    adapter.foreground_app()
 }

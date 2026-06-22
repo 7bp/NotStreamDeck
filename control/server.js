@@ -79,6 +79,18 @@ wss.on('connection', (ws) => {
         pending.resolve(msg);
         pendingQueries.delete(msg.id);
       }
+      // If the response contains a notification, store + broadcast it
+      if (msg.notification) {
+        const notif = { hostId: ws.hostId, hostName: ws.deviceId ? ws.deviceId.slice(0, 8) : 'agent', title: msg.notification.title || '', body: msg.notification.body || '' };
+        store.addNotification(notif);
+        broadcastFrontend({ type: 'notification', data: notif });
+      }
+    } else if (msg.type === 'notification') {
+      // Agent notification — store + broadcast to frontend
+      const notif = { hostId: ws.hostId, hostName: ws.deviceId ? ws.deviceId.slice(0, 8) : 'agent', title: msg.title || '', body: msg.body || '' };
+      store.addNotification(notif);
+      broadcastFrontend({ type: 'notification', data: notif });
+      console.log(`[notif] from ${notif.hostName}: ${notif.title} — ${notif.body}`);
     }
   });
 
@@ -294,28 +306,66 @@ app.delete('/api/keys/:id', (req, res) => {
   }
 });
 
-// Execute a key action
-app.post('/api/execute/:keyId', (req, res) => {
+// Execute a key action — supports multi-host macros
+function sendToAgent(hostId, cmd, callback) {
+  const config = store.get();
+  const host = config.hosts.find((h) => h.id === hostId);
+  if (!host) return callback({ ok: false, error: 'host not found' });
+  const conn = agentConns.get(host.deviceId);
+  if (!conn) return callback({ ok: false, error: 'host offline' });
+  try {
+    conn.ws.send(JSON.stringify(cmd));
+    console.log(`[exec] sent ${cmd.type} to ${host.name}`);
+    callback(null, { ok: true, commandId: cmd.id });
+  } catch (e) {
+    callback({ ok: false, error: 'send failed' });
+  }
+}
+
+app.post('/api/execute/:keyId', async (req, res) => {
   const key = store.getKey(req.params.keyId);
   if (!key) return res.status(404).json({ error: 'key not found' });
 
-  // allow hostId override (e.g. from a page-pinned host)
   const targetHostId = req.body?.hostId || key.hostId;
-  if (!targetHostId) return res.status(400).json({ error: 'no host assigned' });
-
   const config = store.get();
+  const token = config.token;
+
+  if (key.action.type === 'macro') {
+    const actions = key.action.payload?.actions || [];
+    const mode = key.action.payload?.mode || 'serial';
+
+    const results = [];
+    for (let i = 0; i < actions.length; i++) {
+      const step = actions[i];
+      const stepHostId = step.hostId || targetHostId;
+      if (!stepHostId) { results.push({ step: i, ok: false, error: 'no host assigned' }); continue; }
+
+      const cmd = { id: uuidv4(), type: step.type, payload: step.payload || {}, token };
+
+      if (mode === 'parallel') {
+        sendToAgent(stepHostId, cmd, (err, result) => {
+          results.push({ step: i, ...(err || result) });
+        });
+      } else {
+        await new Promise((resolve) => {
+          sendToAgent(stepHostId, cmd, (err, result) => {
+            results.push({ step: i, ...(err || result) });
+            resolve();
+          });
+        });
+      }
+    }
+    return res.json({ ok: true, macroMode: mode, results });
+  }
+
+  // Simple (non-macro) execution
+  if (!targetHostId) return res.status(400).json({ error: 'no host assigned' });
   const host = config.hosts.find((h) => h.id === targetHostId);
   if (!host) return res.status(404).json({ error: 'host not found' });
-
   const conn = agentConns.get(host.deviceId);
   if (!conn) return res.status(503).json({ error: 'host offline' });
 
-  const cmd = {
-    id: uuidv4(),
-    type: key.action.type,
-    payload: key.action.payload,
-    token: config.token,
-  };
+  const cmd = { id: uuidv4(), type: key.action.type, payload: key.action.payload, token };
 
   try {
     conn.ws.send(JSON.stringify(cmd));
@@ -365,6 +415,20 @@ function sendAgentQuery(hostId, type, payload, res, timeoutMs) {
 
 // ---------- List Apps ----------
 app.post('/api/list-apps/:hostId', (req, res) => sendAgentQuery(req.params.hostId, 'list_apps', {}, res, 15000));
+
+// ---------- Foreground App ----------
+app.post('/api/foreground-app/:hostId', (req, res) => sendAgentQuery(req.params.hostId, 'foreground_app', {}, res, 5000));
+
+// ---------- Notifications ----------
+app.get('/api/notifications', (req, res) => {
+  const config = store.get();
+  res.json(config.notifications || []);
+});
+
+app.delete('/api/notifications', (req, res) => {
+  store.clearNotifications();
+  res.json({ ok: true });
+});
 
 // ---------- Upload endpoint ----------
 app.post('/api/upload', upload.single('file'), (req, res) => {

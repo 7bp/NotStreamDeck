@@ -167,6 +167,19 @@ impl OSAdapter for MacOSAdapter {
         }
         serde_json::to_string(&apps).unwrap_or_default()
     }
+
+    fn foreground_app(&self) -> String {
+        let script = r#"tell application "System Events" to get name of first application process whose frontmost is true"#;
+        if let Ok(out) = std::process::Command::new("osascript")
+            .args(["-e", script])
+            .output()
+        {
+            if out.status.success() {
+                return String::from_utf8_lossy(&out.stdout).trim().to_string();
+            }
+        }
+        String::new()
+    }
 }
 
 // ── macOS auto-start via LaunchAgent ──

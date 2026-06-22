@@ -305,6 +305,17 @@ function SettingsPanel({ config, saveConfig, onPreviewScreensaver, clientIP }) {
             style={{ width: '100%', margin: '4px 0' }}
           />
         </div>
+
+        <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+            <input type="checkbox" checked={!!config.kioskMode} onChange={(e) => saveConfig({ kioskMode: e.target.checked })} />
+            <span style={{ color: '#888', fontSize: '0.85rem' }}>Kiosk Mode — hides setup, locks to grid</span>
+          </label>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+            <input type="checkbox" checked={!!config.appFilterEnabled} onChange={(e) => saveConfig({ appFilterEnabled: e.target.checked })} />
+            <span style={{ color: '#888', fontSize: '0.85rem' }}>App Filter — only show pages matching the active app</span>
+          </label>
+        </div>
       </div>
 
       <p style={{ color: '#555', fontSize: '0.8rem', marginTop: 24, lineHeight: 1.5 }}>

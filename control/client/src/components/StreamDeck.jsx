@@ -127,7 +127,7 @@ function isVideo(url) {
   return /\.(mp4|webm)(\?|$)/i.test(url);
 }
 
-export default function StreamDeck({ page, pages, hosts, hostStatus, pageIndex, pageCount, onPrev, onNext, onSetup, onExecute, onAddKey, onEditKey, onEditPage, editMode, timeStr, onNavigate, serverVersion }) {
+export default function StreamDeck({ page, pages, hosts, hostStatus, pageIndex, pageCount, onPrev, onNext, onSetup, onExecute, onAddKey, onEditKey, onEditPage, editMode, timeStr, onNavigate, serverVersion, kioskMode }) {
   const swipeStart = useRef(null);
   const prevIdx = useRef(pageIndex);
   const [slideDir, setSlideDir] = useState(null);
@@ -207,7 +207,7 @@ export default function StreamDeck({ page, pages, hosts, hostStatus, pageIndex, 
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <span style={styles.clock}>{timeStr}</span>
-          <button style={{ ...styles.setupBtn, opacity: editMode ? 0.9 : 0.4 }} onClick={onSetup} title={editMode ? 'Exit edit mode' : 'Setup'}>{editMode ? '✓' : '⚙️'}</button>
+          {!kioskMode && <button style={{ ...styles.setupBtn, opacity: editMode ? 0.9 : 0.4 }} onClick={onSetup} title={editMode ? 'Exit edit mode' : 'Setup'}>{editMode ? '✓' : '⚙️'}</button>}
         </div>
       </div>
 

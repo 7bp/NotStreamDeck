@@ -75,7 +75,73 @@ for($i=0;$i -lt {level};$i++){{$(New-Object -ComObject WScript.Shell).SendKeys([
     }
 
     fn list_apps(&self) -> String {
-        // Windows stub — return desktop shortcuts or Start Menu apps
+        use serde_json::json;
+        let script = r#"
+$dirs = @(
+    "$env:ProgramData\Microsoft\Windows\Start Menu\Programs",
+    "$env:APPDATA\Microsoft\Windows\Start Menu\Programs",
+    "${env:ProgramFiles}\WindowsApps",
+    "$env:LOCALAPPDATA\Microsoft\WindowsApps"
+)
+$apps = @()
+foreach ($dir in $dirs) {
+    if (Test-Path $dir) {
+        Get-ChildItem "$dir\*.lnk" -ErrorAction SilentlyContinue | ForEach-Object {
+            $shell = New-Object -ComObject WScript.Shell
+            $shortcut = $shell.CreateShortcut($_.FullName)
+            $name = $shortcut.TargetPath -replace '\.exe$',''
+            if ($name) {
+                $apps += [PSCustomObject]@{ name = (Get-Item $_.FullName).BaseName; path = $shortcut.TargetPath }
+            }
+        }
+    }
+}
+$dirs2 = @("${env:ProgramFiles}", "${env:ProgramFiles(x86)}")
+foreach ($dir in $dirs2) {
+    if (Test-Path $dir) {
+        Get-ChildItem "$dir\*.exe" -ErrorAction SilentlyContinue | ForEach-Object {
+            $apps += [PSCustomObject]@{ name = $_.BaseName; path = $_.FullName }
+        }
+    }
+}
+$apps | Sort-Object name -Unique | ConvertTo-Json -Compress
+"#;
+        if let Ok(out) = std::process::Command::new("powershell")
+            .args(["-NoProfile", "-NoLogo", "-Command", script])
+            .output()
+        {
+            let raw = String::from_utf8_lossy(&out.stdout).trim().to_string();
+            if !raw.is_empty() {
+                return raw;
+            }
+        }
+        String::new()
+    }
+
+    fn foreground_app(&self) -> String {
+        let script = r#"Add-Type @"
+using System;
+using System.Runtime.InteropServices;
+public class Foreground {
+    [DllImport("user32.dll")]
+    public static extern IntPtr GetForegroundWindow();
+    [DllImport("user32.dll")]
+    public static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint pid);
+}
+"@
+$hwnd = [Foreground]::GetForegroundWindow()
+$pid = 0
+[void][Foreground]::GetWindowThreadProcessId($hwnd, [ref]$pid)
+try { (Get-Process -Id $pid).ProcessName } catch { '' }
+"#;
+        if let Ok(out) = std::process::Command::new("powershell")
+            .args(["-NoProfile", "-NoLogo", "-Command", script])
+            .output()
+        {
+            if out.status.success() {
+                return String::from_utf8_lossy(&out.stdout).trim().to_string();
+            }
+        }
         String::new()
     }
 

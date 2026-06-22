@@ -7,6 +7,7 @@ pub trait OSAdapter {
     fn set_volume(&self, level: u8);
     fn lock_screen(&self);
     fn list_apps(&self) -> String;
+    fn foreground_app(&self) -> String;
     fn media_control(&self, command: &str);
 }
 
