@@ -118,6 +118,9 @@ Digital Clock, Ambient Gradient, Weather, Icon Slideshow, Network Pulse, Date & 
 ### Import / Export
 Export all pages and keys as a JSON file, import to restore or transfer configurations between instances.
 
+### PWA
+Add the frontend to your home screen — works as a standalone fullscreen app. Opens instantly (offline shell with spinner), connects to the server when available. Auto-refreshes when a new version is deployed.
+
 ### Agent
 
 - System tray with Enable/Disable, Set Server URL/Token, Restart, Quit
