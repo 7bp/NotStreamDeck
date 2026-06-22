@@ -1,3 +1,12 @@
+## v0.2.3
+
+- Feature: kiosk mode exit — tap clock 7 times in 3s, enter PIN to disable
+- Fix: title/footer dark gradient fades restored (z-index layering: bg → fades → content)
+- UI: notification bell moved to center of title bar, panel drops down centered
+- UI: notification timestamps now show relative time ("5s ago", "2m ago", etc.)
+- Fix: notifications show configured host name instead of UUID prefix
+- Feature: notification toast popup at top center, tap to expand, auto-dismiss 5s
+
 ## v0.2.2
 
 - Feature: toast notification popup — new notifications appear at the top center as a pill (bell + host + title), expand on tap to show full content with dismiss, auto-dismiss after 5s
