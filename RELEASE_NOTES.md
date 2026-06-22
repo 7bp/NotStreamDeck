@@ -1,3 +1,7 @@
+## v0.2.2
+
+- Feature: toast notification popup — new notifications appear at the top center as a pill (bell + host + title), expand on tap to show full content with dismiss, auto-dismiss after 5s
+
 ## v0.2.1
 
 - Fix: notification timestamp now correctly included in WebSocket broadcasts (was missing, causing "Invalid Date" in panel)
