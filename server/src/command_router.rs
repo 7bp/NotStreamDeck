@@ -186,9 +186,9 @@ pub fn start_notification_listener() {
         #[cfg(target_os = "macos")]
         {
             use std::io::BufRead;
-            // Try log stream first (real-time)
+            // Watch usernotifictiond — the daemon that delivers actual user notifications
             if let Ok(mut child) = std::process::Command::new("log")
-                .args(["stream", "--style", "json", "--predicate", "process contains \"NotificationCenter\""])
+                .args(["stream", "--style", "json", "--predicate", "process == \"usernotifictiond\""])
                 .stdout(std::process::Stdio::piped())
                 .stderr(std::process::Stdio::null())
                 .spawn()
@@ -203,10 +203,8 @@ pub fn start_notification_listener() {
                         if line.trim().is_empty() { continue; }
                         if let Ok(event) = serde_json::from_str::<serde_json::Value>(&line) {
                             let msg = event["eventMessage"].as_str().unwrap_or("").to_lowercase();
-                            if msg.contains("notification") || msg.contains("posted") || msg.contains("title:") {
-                                let title = event["eventMessage"].as_str().unwrap_or("System").to_string();
-                                let app = event["process"].as_str().unwrap_or("NotificationCenter");
-                                push_notif(app, &title);
+                            if msg.contains("deliver") || msg.contains("request") {
+                                push_notif("Notification", msg);
                             }
                         }
                     }
@@ -219,24 +217,8 @@ pub fn start_notification_listener() {
 }
 
 pub fn poll_system_notifications() -> Vec<serde_json::Value> {
-    let mut result = Vec::new();
-    // Also do a log show poll as fallback (in case stream missed something)
-    #[cfg(target_os = "macos")]
-    if let Ok(out) = std::process::Command::new("log")
-        .args(["show", "--last", "10s", "--style", "compact", "--predicate", "process contains \"NotificationCenter\""])
-        .output()
-    {
-        let raw = String::from_utf8_lossy(&out.stdout);
-        for line in raw.lines() {
-            let lower = line.to_lowercase();
-            if lower.contains("notification") || lower.contains("posted") || lower.contains("title:") {
-                let body = line.trim().to_string();
-                push_notif("System", &body);
-            }
-        }
-    }
-
     let mut q = notif_queue().lock().unwrap();
+    let mut result = Vec::new();
     while let Some(n) = q.pop_front() {
         result.push(n);
     }
