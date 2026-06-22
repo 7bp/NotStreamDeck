@@ -1,3 +1,9 @@
+## v0.2.1
+
+- Fix: notification timestamp now correctly included in WebSocket broadcasts (was missing, causing "Invalid Date" in panel)
+- UI: notification bell moved from floating overlay into StreamDeck title bar, next to clock and gear
+- Feature: **System Notification Mirroring** (macOS) — agent polls `log show` every ~15s for NotificationCenter events and forwards them to the frontend panel
+
 ## v0.2.0
 
 - Feature: **Kiosk Mode** — toggle in Settings, hides setup button, locks to grid. Ideal for wall-mounted tablets.
