@@ -1,6 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react';
 import KeyButton from './KeyButton.jsx';
 
+function relTime(ts) {
+  if (!ts) return '';
+  const s = Math.floor((Date.now() - ts) / 1000);
+  if (s < 60) return `${s}s ago`;
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  return `${Math.floor(h / 24)}d ago`;
+}
+
 function WeatherKey({ actionPayload, iconSize, bgColor }) {
   const [temp, setTemp] = useState('--');
   const loc = actionPayload?.location || 'London';
@@ -127,7 +138,7 @@ function isVideo(url) {
   return /\.(mp4|webm)(\?|$)/i.test(url);
 }
 
-export default function StreamDeck({ page, pages, hosts, hostStatus, pageIndex, pageCount, onPrev, onNext, onSetup, onExecute, onAddKey, onEditKey, onEditPage, editMode, timeStr, onNavigate, serverVersion, kioskMode, notifications, showNotifs, setShowNotifs, clearNotifs }) {
+export default function StreamDeck({ page, pages, hosts, hostStatus, pageIndex, pageCount, onPrev, onNext, onSetup, onExecute, onAddKey, onEditKey, onEditPage, editMode, timeStr, onNavigate, serverVersion, kioskMode, notifications, showNotifs, setShowNotifs, clearNotifs, onExitKiosk }) {
   const swipeStart = useRef(null);
   const prevIdx = useRef(pageIndex);
   const [slideDir, setSlideDir] = useState(null);
@@ -163,13 +174,13 @@ export default function StreamDeck({ page, pages, hosts, hostStatus, pageIndex, 
         <video
           src={bgUrl}
           autoPlay loop muted playsInline
-          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: -1 }}
+          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: -2 }}
         />
       );
     } else {
       bgEl = (
         <div style={{
-          position: 'absolute', inset: 0, zIndex: -1,
+          position: 'absolute', inset: 0, zIndex: -2,
           backgroundImage: `url(${bgUrl})`, backgroundSize: 'cover', backgroundPosition: 'center',
         }} />
       );
@@ -189,6 +200,21 @@ export default function StreamDeck({ page, pages, hosts, hostStatus, pageIndex, 
     else if (dx < 0 && pageIndex < pageCount - 1) onNext();
   };
 
+  // Kiosk exit: 7 rapid taps on clock
+  const kioskTaps = useRef(0);
+  const kioskTimer = useRef(null);
+  const [kioskPin, setKioskPin] = useState(null);
+  const onClockTap = () => {
+    if (!kioskMode) return;
+    kioskTaps.current += 1;
+    if (kioskTimer.current) clearTimeout(kioskTimer.current);
+    kioskTimer.current = setTimeout(() => { kioskTaps.current = 0; }, 3000);
+    if (kioskTaps.current >= 7) {
+      kioskTaps.current = 0;
+      setKioskPin('');
+    }
+  };
+
   const animKey = `slide-${pageIndex}-${slideDir}`;
   const animStyle = slideDir
     ? { animation: `${slideDir === 'right' ? 'sdSlideInRight' : 'sdSlideInLeft'} 0.25s ease` }
@@ -196,24 +222,21 @@ export default function StreamDeck({ page, pages, hosts, hostStatus, pageIndex, 
 
   return (
     <div style={{ ...styles.wrapper }} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+      {bgEl}
       <div style={styles.topFade} />
       <div style={styles.bottomFade} />
-      {bgEl}
       <div style={styles.topBar}>
         <div style={styles.pageNav}>
           <button style={styles.navBtn} onClick={onPrev} disabled={pageIndex === 0}>◀</button>
           <span style={styles.pageLabel}>{page.name || 'Untitled'}</span>
           <button style={styles.navBtn} onClick={onNext} disabled={pageIndex >= pageCount - 1}>▶</button>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <span style={styles.clock}>{timeStr}</span>
+        <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', position: 'relative' }}>
           {!kioskMode && (
-            <>
-              <button onClick={() => setShowNotifs?.((s) => !s)} style={styles.notifBtn} title="Notifications">
-                {notifications?.length > 0 ? `🔔${notifications.length}` : '🔕'}
-              </button>
+            <button onClick={() => setShowNotifs?.((s) => !s)} style={styles.notifBtn} title="Notifications">
+              {notifications?.length > 0 ? `🔔${notifications.length}` : '🔕'}
               {showNotifs && (
-                <div style={styles.notifPanel}>
+                <div style={styles.notifPanel} onClick={(e) => e.stopPropagation()}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
                     <span style={{ fontSize: '0.85rem', color: '#888' }}>Notifications</span>
                     {notifications?.length > 0 && <button onClick={clearNotifs} style={{ background: 'none', border: 'none', color: '#555', cursor: 'pointer', fontSize: '0.75rem' }}>Clear</button>}
@@ -223,7 +246,7 @@ export default function StreamDeck({ page, pages, hosts, hostStatus, pageIndex, 
                   ) : (
                     notifications.slice(0, 50).map((n) => (
                       <div key={n.id} style={{ padding: '6px 8px', background: 'rgba(255,255,255,0.03)', borderRadius: 6 }}>
-                        <div style={{ fontSize: '0.7rem', color: '#555', marginBottom: 2 }}>{n.hostName} · {n.timestamp ? new Date(n.timestamp).toLocaleTimeString() : ''}</div>
+                        <div style={{ fontSize: '0.7rem', color: '#555', marginBottom: 2 }}>{n.hostName} · {relTime(n.timestamp)}</div>
                         {n.title && <div style={{ fontSize: '0.8rem', color: '#ccc', fontWeight: 600 }}>{n.title}</div>}
                         {n.body && <div style={{ fontSize: '0.75rem', color: '#888' }}>{n.body}</div>}
                       </div>
@@ -231,11 +254,32 @@ export default function StreamDeck({ page, pages, hosts, hostStatus, pageIndex, 
                   )}
                 </div>
               )}
-              <button style={{ ...styles.setupBtn, opacity: editMode ? 0.9 : 0.4 }} onClick={onSetup} title={editMode ? 'Exit edit mode' : 'Setup'}>{editMode ? '✓' : '⚙️'}</button>
-            </>
+            </button>
           )}
         </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <span style={styles.clock} onClick={onClockTap}>{timeStr}</span>
+          {!kioskMode && <button style={{ ...styles.setupBtn, opacity: editMode ? 0.9 : 0.4 }} onClick={onSetup} title={editMode ? 'Exit edit mode' : 'Setup'}>{editMode ? '✓' : '⚙️'}</button>}
+        </div>
       </div>
+
+      {kioskPin !== null && (
+        <div style={{ position: 'absolute', top: 44, left: '50%', transform: 'translateX(-50%)', zIndex: 9999, background: '#1a1a1a', border: '1px solid #2a2a2a', borderRadius: 12, padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 8, boxShadow: '0 4px 24px rgba(0,0,0,0.5)' }}>
+          <span style={{ color: '#888', fontSize: '0.85rem' }}>PIN</span>
+          <input type="password" maxLength={6} autoFocus value={kioskPin}
+            onChange={(e) => setKioskPin(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                fetch('/api/verify-pin', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({pin: kioskPin}) })
+                  .then((r) => r.json()).then((d) => { if (d.ok) { setKioskPin(null); onExitKiosk?.(); } else setKioskPin(''); });
+              }
+              if (e.key === 'Escape') setKioskPin(null);
+            }}
+            style={{ width: 120, padding: '6px 10px', background: '#222', border: '1px solid #444', borderRadius: 6, color: '#eee', fontSize: '1rem', textAlign: 'center', outline: 'none' }}
+          />
+          <button onClick={() => setKioskPin(null)} style={{ background: 'none', border: 'none', color: '#555', cursor: 'pointer', fontSize: '0.9rem' }}>✕</button>
+        </div>
+      )}
 
       {onlineHosts.length > 0 && (
         <div style={styles.hostsBar}>
@@ -289,7 +333,7 @@ export default function StreamDeck({ page, pages, hosts, hostStatus, pageIndex, 
 const styles = {
   wrapper: {
     display: 'flex', flexDirection: 'column', height: '100%',
-    padding: '12px 16px', gap: 8, position: 'relative', zIndex: 0,
+    padding: '12px 16px', gap: 8, position: 'relative',
   },
   topBar: {
     display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 0',
@@ -334,9 +378,9 @@ const styles = {
     fontSize: '0.8rem', padding: '2px 4px',
   },
   notifPanel: {
-    position: 'absolute', top: 40, right: 50, zIndex: 9998,
-    width: 300, maxHeight: '60vh', background: '#1a1a1a',
+    position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)', zIndex: 9998,
+    width: 320, maxHeight: '60vh', background: '#1a1a1a', marginTop: 6,
     border: '1px solid #2a2a2a', borderRadius: 12, padding: 12,
-    overflow: 'auto', display: 'flex', flexDirection: 'column', gap: 6,
+    overflow: 'auto', display: 'flex', flexDirection: 'column', gap: 6, boxShadow: '0 4px 24px rgba(0,0,0,0.5)',
   },
 };

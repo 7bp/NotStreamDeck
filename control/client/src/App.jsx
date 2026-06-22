@@ -307,6 +307,7 @@ const [serverVersion, setServerVersion] = useState(null);
         timeStr={timeStr} editMode={false} serverVersion={serverVersion}
         kioskMode={true}
         notifications={notifications} showNotifs={showNotifs} setShowNotifs={setShowNotifs} clearNotifs={clearNotifs}
+        onExitKiosk={() => saveConfig({ kioskMode: false })}
         onNavigate={handleNavigate}
         onPrev={() => setActivePageIdx((i) => Math.max(0, i - 1))}
         onNext={() => setActivePageIdx((i) => Math.min(pages.length - 1, i + 1))}
@@ -375,6 +376,7 @@ const [serverVersion, setServerVersion] = useState(null);
           serverVersion={serverVersion}
           kioskMode={isKiosk}
           notifications={notifications} showNotifs={showNotifs} setShowNotifs={setShowNotifs} clearNotifs={clearNotifs}
+          onExitKiosk={() => saveConfig({ kioskMode: false })}
           onNavigate={handleNavigate}
           onPrev={() => setActivePageIdx((i) => Math.max(0, i - 1))}
           onNext={() => setActivePageIdx((i) => Math.min(currPages.length - 1, i + 1))}
@@ -413,7 +415,10 @@ const [serverVersion, setServerVersion] = useState(null);
       {/* Toast notification */}
       {toast && (
         <div
-          onClick={() => setToast((t) => t ? { ...t, expanded: !t.expanded } : null)}
+          onClick={() => {
+            if (toastTimer.current) clearTimeout(toastTimer.current);
+            setToast((t) => t ? { ...t, expanded: !t.expanded } : null);
+          }}
           style={{
             position: 'fixed', top: 16, left: '50%', transform: 'translateX(-50%)', zIndex: 99999,
             background: toast.expanded ? '#1a1a1a' : 'rgba(26,26,26,0.95)',
@@ -440,7 +445,7 @@ const [serverVersion, setServerVersion] = useState(null);
               </div>
               {toast.title && <div style={{ fontSize: '0.9rem', color: '#eee', fontWeight: 600, width: '100%' }}>{toast.title}</div>}
               {toast.body && <div style={{ fontSize: '0.8rem', color: '#999', width: '100%', lineHeight: 1.4 }}>{toast.body}</div>}
-              {toast.timestamp && <div style={{ fontSize: '0.7rem', color: '#555', width: '100%', marginTop: 4 }}>{new Date(toast.timestamp).toLocaleTimeString()}</div>}
+              {toast.timestamp && <div style={{ fontSize: '0.7rem', color: '#555', width: '100%', marginTop: 4 }}>{(() => { const s = Math.floor((Date.now() - toast.timestamp) / 1000); return s < 60 ? `${s}s ago` : s < 3600 ? `${Math.floor(s / 60)}m ago` : s < 86400 ? `${Math.floor(s / 3600)}h ago` : `${Math.floor(s / 86400)}d ago`; })()}</div>}
             </>
           )}
         </div>
