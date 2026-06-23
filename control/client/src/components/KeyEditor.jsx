@@ -35,6 +35,7 @@ export default function KeyEditor({ keyData, hosts, onSave, onDelete, onCancel, 
   const [volumeLevel, setVolumeLevel] = useState(form.action.payload?.level ?? 50);
   const [timerDuration, setTimerDuration] = useState(form.action.payload?.duration ?? 300);
   const [macroActs, setMacroActs] = useState(form.action.payload?.actions || []);
+  const [macroMode, setMacroMode] = useState(form.action.payload?.mode || 'serial');
   const [navigateTarget, setNavigateTarget] = useState(form.action.payload?.target || 'home');
   const [navigatePageName, setNavigatePageName] = useState(form.action.payload?.pageName || '');
   const [navigatePageIndex, setNavigatePageIndex] = useState(form.action.payload?.pageIndex ?? 0);
@@ -107,7 +108,7 @@ export default function KeyEditor({ keyData, hosts, onSave, onDelete, onCancel, 
       case 'timer':
         return { duration: timerDuration };
       case 'macro':
-        return { actions: macroActs };
+        return { actions: macroActs, mode: macroMode };
       case 'navigate':
         return { target: navigateTarget, pageName: navigatePageName, pageIndex: navigatePageIndex };
       case 'media':
@@ -314,13 +315,18 @@ export default function KeyEditor({ keyData, hosts, onSave, onDelete, onCancel, 
       {form.action.type === 'macro' && (
         <div style={styles.field}>
           <label style={styles.label}>Actions ({macroActs.length})</label>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 8, alignItems: 'center' }}>
+            <span style={{ color: '#888', fontSize: '0.8rem' }}>Mode:</span>
+            <button style={{ ...styles.smallBtn, background: macroMode === 'serial' ? 'rgba(40,180,80,0.2)' : 'transparent', color: macroMode === 'serial' ? '#5d9' : '#888' }} onClick={() => setMacroMode('serial')}>Serial</button>
+            <button style={{ ...styles.smallBtn, background: macroMode === 'parallel' ? 'rgba(40,180,80,0.2)' : 'transparent', color: macroMode === 'parallel' ? '#5d9' : '#888' }} onClick={() => setMacroMode('parallel')}>Parallel</button>
+          </div>
           {macroActs.map((act, i) => (
             <div key={i} style={{ background: '#222', borderRadius: 6, padding: 10, marginBottom: 8 }}>
               <div style={{ display: 'flex', gap: 6, marginBottom: 6, alignItems: 'center' }}>
                 <span style={{ color: '#666', fontSize: '0.75rem', minWidth: 20 }}>{i + 1}.</span>
                 <select style={{ ...styles.input, flex: 1 }} value={act.type} onChange={(e) => {
                   const n = [...macroActs];
-                  n[i] = { type: e.target.value, payload: { ...(ACTION_DEFAULTS[e.target.value] || {}) } };
+                  n[i] = { type: e.target.value, payload: { ...(ACTION_DEFAULTS[e.target.value] || {}) }, hostId: act.hostId || '' };
                   setMacroActs(n);
                 }}>
                   <option value="open_app">Open App</option>
@@ -332,6 +338,10 @@ export default function KeyEditor({ keyData, hosts, onSave, onDelete, onCancel, 
                 </select>
                 <button style={{ ...styles.smallBtn, color: '#a55' }} onClick={() => setMacroActs(macroActs.filter((_, j) => j !== i))}>✕</button>
               </div>
+              <select style={{ ...styles.input, marginBottom: 6 }} value={act.hostId || ''} onChange={(e) => { const n = [...macroActs]; n[i].hostId = e.target.value; setMacroActs(n); }}>
+                <option value="">— Key's default host —</option>
+                {(hosts || []).filter((h) => h.id).map((h) => <option key={h.id} value={h.id}>{h.name}</option>)}
+              </select>
               {act.type === 'open_app' && <input style={styles.input} placeholder="App name or path" value={act.payload.name || ''} onChange={(e) => { const n = [...macroActs]; n[i].payload.name = e.target.value; setMacroActs(n); }} />}
               {act.type === 'shell' && <textarea style={{ ...styles.input, fontFamily: 'monospace', minHeight: 50, resize: 'vertical' }} placeholder="echo hello" value={act.payload.command || ''} onChange={(e) => { const n = [...macroActs]; n[i].payload.command = e.target.value; setMacroActs(n); }} />}
               {act.type === 'hotkey' && <input style={styles.input} placeholder="cmd + shift + c" value={(act.payload.keys || []).join(' + ')} onChange={(e) => { const n = [...macroActs]; n[i].payload.keys = e.target.value.split(/\+|,|\s+/).map((s) => s.trim()).filter(Boolean); setMacroActs(n); }} />}
@@ -345,7 +355,7 @@ export default function KeyEditor({ keyData, hosts, onSave, onDelete, onCancel, 
               {act.type === 'lock' && <p style={{ color: '#555', fontSize: '0.75rem' }}>Locks screen — no config needed.</p>}
             </div>
           ))}
-          <button style={{ ...styles.smallBtn, color: '#5a9', fontSize: '0.85rem' }} onClick={() => setMacroActs([...macroActs, { type: 'open_app', payload: { name: '' } }])}>+ Add Action</button>
+          <button style={{ ...styles.smallBtn, color: '#5a9', fontSize: '0.85rem' }} onClick={() => setMacroActs([...macroActs, { type: 'open_app', payload: { name: '' }, hostId: '' }])}>+ Add Action</button>
         </div>
       )}
 
