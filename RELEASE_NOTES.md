@@ -1,3 +1,8 @@
+## v0.3.2
+
+- Feature: macro editor — per-step host selector (each action can target a different machine) + serial/parallel mode toggle
+- Removed: notification test script
+
 ## v0.3.1
 
 - Fix: removed leftover notification panel markup in StreamDeck.jsx that caused `notifications is not defined` crash
